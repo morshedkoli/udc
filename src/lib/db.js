@@ -2,7 +2,9 @@ import Database from 'better-sqlite3';
 import { join } from 'path';
 
 // Create or connect to the database
-const dbPath = join(process.cwd(), 'services.db');
+const dbPath =
+  process.env.SQLITE_DB_PATH ||
+  join(process.env.NODE_ENV === 'production' ? process.env.TEMP || '/tmp' : process.cwd(), 'services.db');
 const db = new Database(dbPath);
 
 // Initialize the database table
