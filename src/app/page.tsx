@@ -1,65 +1,226 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect, useCallback } from 'react';
+import ServiceForm from '@/components/ServiceForm';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
+interface Service {
+  id: number;
+  serviceName: string;
+  serviceDate: string;
+  amountPaid: number;
+  customerGender: string;
+  notes?: string;
+}
+
+interface Stats {
+  totalServices: number;
+  totalRevenue: number;
+  genderBreakdown: {
+    male: number;
+    female: number;
+    other: number;
+    preferNotToSay: number;
+  };
+}
+
+export default function Dashboard() {
+  const [recentServices, setRecentServices] = useState<Service[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    totalServices: 0,
+    totalRevenue: 0,
+    genderBreakdown: {
+      male: 0,
+      female: 0,
+      other: 0,
+      preferNotToSay: 0
+    }
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Calculate date range for current month
+  const getCurrentMonthRange = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0]
+    };
+  };
+
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch recent services
+      const recentRes = await fetch('/api/data?type=recent');
+      const recentData = await recentRes.json();
+      setRecentServices(recentData);
+
+      // Fetch stats for current month
+      const { startDate, endDate } = getCurrentMonthRange();
+      const statsRes = await fetch(`/api/data?type=stats&startDate=${startDate}&endDate=${endDate}`);
+      const statsData = await statsRes.json();
+      setStats(statsData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  // Calculate gender percentages
+  const calculateGenderPercentages = () => {
+    const total = stats.genderBreakdown.male + stats.genderBreakdown.female + 
+                 stats.genderBreakdown.other + stats.genderBreakdown.preferNotToSay;
+    
+    if (total === 0) return { male: 0, female: 0, other: 0, preferNotToSay: 0 };
+    
+    return {
+      male: Math.round((stats.genderBreakdown.male / total) * 100),
+      female: Math.round((stats.genderBreakdown.female / total) * 100),
+      other: Math.round((stats.genderBreakdown.other / total) * 100),
+      preferNotToSay: Math.round((stats.genderBreakdown.preferNotToSay / total) * 100)
+    };
+  };
+
+  const genderPercentages = calculateGenderPercentages();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার</h1>
+            <p className="text-gray-600">Track your services, payments, and customer demographics</p>
+          </div>
+
+          {/* Service Form */}
+          <ServiceForm onServiceLogged={fetchDashboardData} />
+
+          {/* Loading indicator */}
+          {loading && (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              <p className="mt-2 text-gray-600">Loading dashboard data...</p>
+            </div>
+          )}
+
+          {!loading && (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Services</h3>
+                  <p className="text-3xl font-bold text-blue-600">{stats.totalServices}</p>
+                  <p className="text-sm text-gray-500 mt-1">This month</p>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Revenue</h3>
+                  <p className="text-3xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
+                  <p className="text-sm text-gray-500 mt-1">This month</p>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Customer Demographics</h3>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-sm text-gray-600">Male</span>
+                    <span className="font-medium">{genderPercentages.male}%</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-sm text-gray-600">Female</span>
+                    <span className="font-medium">{genderPercentages.female}%</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-sm text-gray-600">Other/Not Specified</span>
+                    <span className="font-medium">
+                      {genderPercentages.other + genderPercentages.preferNotToSay}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Activity Table */}
+              <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-800">Recent Activity</h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Service
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Gender
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {recentServices.length > 0 ? (
+                        recentServices.map((service) => (
+                          <tr key={service.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {service.serviceDate}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {service.serviceName}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {service.customerGender}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {formatCurrency(service.amountPaid)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                            No services logged yet
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Navigation to Reports */}
+              <div className="mt-8 text-center">
+                <a 
+                  href="/reports" 
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  View Detailed Reports
+                </a>
+              </div>
+            </>
+          )}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
