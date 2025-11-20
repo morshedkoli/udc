@@ -236,18 +236,18 @@ export default function ReportsPage() {
               onClick={() => router.push('/')}
               className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
             >
-              ← Back to Dashboard
+              ← ড্যাশবোর্ডে ফিরে যান
             </button>
             
             <div className="text-center">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার</h1>
-              <p className="text-gray-600">Generate and export detailed reports</p>
+              <p className="text-gray-600">বিস্তারিত রিপোর্ট তৈরি ও এক্সপোর্ট করুন</p>
             </div>
           </div>
 
           {/* Report Type Selector */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">Select Report Type</h2>
+            <h2 className="text-xl font-bold mb-4">রিপোর্টের ধরণ নির্বাচন করুন</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <button
@@ -258,8 +258,8 @@ export default function ReportsPage() {
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <div className="font-medium">Last 15 Days</div>
-                <div className="text-sm text-gray-500 mt-1">Daily breakdown</div>
+                <div className="font-medium">গত ১৫ দিন</div>
+                <div className="text-sm text-gray-500 mt-1">প্রতিদিনের বিবরণ</div>
               </button>
               
               <button
@@ -267,8 +267,8 @@ export default function ReportsPage() {
                 disabled
                 className="py-3 px-4 rounded-lg border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
               >
-                <div className="font-medium">Monthly Report</div>
-                <div className="text-sm text-gray-400 mt-1">Coming soon</div>
+                <div className="font-medium">মাসিক রিপোর্ট</div>
+                <div className="text-sm text-gray-400 mt-1">শীঘ্রই আসছে</div>
               </button>
               
               <button
@@ -279,8 +279,8 @@ export default function ReportsPage() {
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                <div className="font-medium">Custom Date Range</div>
-                <div className="text-sm text-gray-500 mt-1">Select your own dates</div>
+                <div className="font-medium">ব্যক্তিগত তারিখ</div>
+                <div className="text-sm text-gray-500 mt-1">নিজের তারিখ নির্ধারণ করুন</div>
               </button>
             </div>
             
@@ -289,7 +289,7 @@ export default function ReportsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
+                    শুরুর তারিখ
                   </label>
                   <input
                     type="date"
@@ -302,7 +302,7 @@ export default function ReportsPage() {
                 
                 <div>
                   <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date
+                    শেষ তারিখ
                   </label>
                   <input
                     type="date"
@@ -326,7 +326,7 @@ export default function ReportsPage() {
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
-                {loading ? 'Generating Report...' : 'Generate Report'}
+                {loading ? 'রিপোর্ট তৈরি হচ্ছে...' : 'রিপোর্ট তৈরি করুন'}
               </button>
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function ReportsPage() {
           {loading && (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-              <p className="mt-2 text-gray-600">Generating report...</p>
+              <p className="mt-2 text-gray-600">রিপোর্ট তৈরি হচ্ছে...</p>
             </div>
           )}
 
@@ -343,13 +343,13 @@ export default function ReportsPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
               <div className="flex">
-                <div className="flex-shrink-0">
+                <div className="shrink-0">
                   <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Error</h3>
+                  <h3 className="text-sm font-medium text-red-800">ত্রুটি</h3>
                   <div className="mt-2 text-sm text-red-700">
                     <p>{error}</p>
                   </div>
@@ -363,29 +363,29 @@ export default function ReportsPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Report Summary</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">রিপোর্ট সারসংক্ষেপ</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total Services:</span>
+                      <span className="text-gray-600">মোট পরিষেবা:</span>
                       <span className="font-medium">{totalServices}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Total Revenue:</span>
+                      <span className="text-gray-600">মোট আয়:</span>
                       <span className="font-medium text-green-600">{formatCurrency(totalRevenue)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Reporting Period:</span>
+                      <span className="text-gray-600">রিপোর্টের সময়কাল:</span>
                       <span className="font-medium">
                         {reportType === 'last15days' 
-                          ? 'Last 15 Days' 
-                          : `${customStartDate} to ${customEndDate}`}
+                          ? 'গত ১৫ দিন' 
+                          : `${customStartDate} থেকে ${customEndDate}`}
                       </span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Export Options</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">রপ্তানির বিকল্প</h3>
                   <div className="flex flex-col space-y-3">
                     <button
                       onClick={handleExportPDF}
@@ -394,7 +394,7 @@ export default function ReportsPage() {
                       <svg className="mr-2 h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M8 7.5h2.5v1.58l-.79.79c-.45.45-.45 1.17 0 1.62.45.45 1.17.45 1.62 0l1.5-1.5V14h-5V7.5zm8.5-5H14V0h-4v2.5H7.5C5.02 2.5 3 4.52 3 7v10c0 2.48 2.02 4.5 4.5 4.5h9c2.48 0 4.5-2.02 4.5-4.5V7c0-2.48-2.02-4.5-4.5-4.5z"/>
                       </svg>
-                      Export as PDF
+                      PDF আকারে ডাউনলোড করুন
                     </button>
                     
                     <button
@@ -404,7 +404,7 @@ export default function ReportsPage() {
                       <svg className="mr-2 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                       </svg>
-                      Export as CSV
+                      CSV আকারে ডাউনলোড করুন
                     </button>
                   </div>
                 </div>
@@ -415,8 +415,8 @@ export default function ReportsPage() {
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-bold text-gray-800">
                     {reportType === 'last15days' 
-                      ? 'Daily Breakdown (Last 15 Days)' 
-                      : 'Daily Breakdown (Custom Range)'}
+                      ? 'প্রতিদিনের বিবরণ (গত ১৫ দিন)' 
+                      : 'প্রতিদিনের বিবরণ (ব্যক্তিগত সীমা)'}
                   </h2>
                 </div>
                 <div className="overflow-x-auto">
@@ -424,13 +424,13 @@ export default function ReportsPage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
+                          তারিখ
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Services
+                          পরিষেবা
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Revenue
+                          রাজস্ব
                         </th>
                       </tr>
                     </thead>
@@ -438,7 +438,7 @@ export default function ReportsPage() {
                       {reportData.length > 0 ? (
                         reportData.map((data, index) => (
                           <tr key={index}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {data.date}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -452,7 +452,7 @@ export default function ReportsPage() {
                       ) : (
                         <tr>
                           <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                            No data available for the selected period
+                            নির্বাচিত সময়সীমার জন্য তথ্য নেই
                           </td>
                         </tr>
                       )}
@@ -461,7 +461,7 @@ export default function ReportsPage() {
                       <tfoot className="bg-gray-50">
                         <tr>
                           <th scope="row" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Totals
+                            মোট তথ্য
                           </th>
                           <td className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {totalServices}
@@ -479,23 +479,23 @@ export default function ReportsPage() {
               {/* Detailed Services Table */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-bold text-gray-800">Detailed Services</h2>
+                  <h2 className="text-xl font-bold text-gray-800">বিস্তারিত পরিষেবা</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
+                          তারিখ
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Service
+                          পরিষেবা
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Gender
+                          লিঙ্গ
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
+                          পরিমাণ
                         </th>
                       </tr>
                     </thead>
@@ -529,9 +529,9 @@ export default function ReportsPage() {
               <svg className="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <h3 className="mt-2 text-lg font-medium text-gray-900">No report data</h3>
+              <h3 className="mt-2 text-lg font-medium text-gray-900">রিপোর্টের তথ্য নেই</h3>
               <p className="mt-1 text-gray-500">
-                Select a report type and generate a report to see data.
+                একটি রিপোর্ট টাইপ নির্বাচন করে রিপোর্ট তৈরি করুন ও তথ্য দেখুন।
               </p>
             </div>
           )}

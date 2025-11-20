@@ -106,7 +106,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার</h1>
-            <p className="text-gray-600">Track your services, payments, and customer demographics</p>
+            <p className="text-gray-600">আপনার পরিষেবা, পেমেন্ট এবং গ্রাহক তথ্য ট্র্যাক করুন</p>
           </div>
 
           {/* Service Form */}
@@ -116,7 +116,7 @@ export default function Dashboard() {
           {loading && (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-              <p className="mt-2 text-gray-600">Loading dashboard data...</p>
+              <p className="mt-2 text-gray-600">ড্যাশবোর্ডের তথ্য লোড হচ্ছে...</p>
             </div>
           )}
 
@@ -125,29 +125,29 @@ export default function Dashboard() {
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Services</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">মোট পরিষেবা</h3>
                   <p className="text-3xl font-bold text-blue-600">{stats.totalServices}</p>
-                  <p className="text-sm text-gray-500 mt-1">This month</p>
+                  <p className="text-sm text-gray-500 mt-1">এই মাসে</p>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Total Revenue</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">মোট আয়</h3>
                   <p className="text-3xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
                   <p className="text-sm text-gray-500 mt-1">This month</p>
                 </div>
                 
                 <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Customer Demographics</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">গ্রাহক গোষ্ঠী</h3>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm text-gray-600">Male</span>
+                    <span className="text-sm text-gray-600">পুরুষ</span>
                     <span className="font-medium">{genderPercentages.male}%</span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-sm text-gray-600">Female</span>
+                    <span className="text-sm text-gray-600">মহিলা</span>
                     <span className="font-medium">{genderPercentages.female}%</span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-sm text-gray-600">Other/Not Specified</span>
+                    <span className="text-sm text-gray-600">অন্যান্য/না জানাল</span>
                     <span className="font-medium">
                       {genderPercentages.other + genderPercentages.preferNotToSay}%
                     </span>
@@ -158,23 +158,23 @@ export default function Dashboard() {
               {/* Recent Activity Table */}
               <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-bold text-gray-800">Recent Activity</h2>
+                  <h2 className="text-xl font-bold text-gray-800">সর্বশেষ কার্যক্রম</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
+                          তারিখ
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Service
+                          পরিষেবা
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Gender
+                          লিঙ্গ
                         </th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
+                          পরিমাণ
                         </th>
                       </tr>
                     </thead>
@@ -199,7 +199,7 @@ export default function Dashboard() {
                       ) : (
                         <tr>
                           <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
-                            No services logged yet
+                            এখনো কোনও পরিষেবা লগ করা হয়নি
                           </td>
                         </tr>
                       )}
@@ -214,7 +214,7 @@ export default function Dashboard() {
                   href="/reports" 
                   className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  View Detailed Reports
+                  বিস্তারিত রিপোর্ট দেখুন
                 </a>
               </div>
             </>

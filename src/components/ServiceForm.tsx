@@ -86,13 +86,14 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-      <h2 className="text-xl font-bold mb-4">Log New Service</h2>
+      <h2 className="text-xl font-bold mb-4">নতুন পরিষেবা লগ করুন</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="serviceName" className="block text-sm font-medium text-gray-700 mb-1">
-              Service Name *
+              পরিষেবার নাম *
             </label>
+
             <select
               id="serviceName"
               name="serviceName"
@@ -101,7 +102,8 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select a service</option>
+              <option value="">একটি পরিষেবা নির্বাচন করুন</option>
+
               {serviceOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
@@ -109,11 +111,12 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               ))}
             </select>
           </div>
-          
+
           <div>
             <label htmlFor="serviceDate" className="block text-sm font-medium text-gray-700 mb-1">
-              Service Date *
+              পরিষেবা তারিখ *
             </label>
+
             <input
               type="date"
               id="serviceDate"
@@ -125,11 +128,12 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               readOnly // Make it read-only since it's auto-set to today
             />
           </div>
-          
+
           <div>
             <label htmlFor="amountPaid" className="block text-sm font-medium text-gray-700 mb-1">
-              Amount Paid *
+              প্রদেয় পরিমাণ *
             </label>
+
             <input
               type="number"
               id="amountPaid"
@@ -143,11 +147,12 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               placeholder="0.00"
             />
           </div>
-          
+
           <div>
             <label htmlFor="customerGender" className="block text-sm font-medium text-gray-700 mb-1">
-              Customer Gender *
+              গ্রাহকের লিঙ্গ *
             </label>
+
             <select
               id="customerGender"
               name="customerGender"
@@ -156,20 +161,19 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-              <option value="Prefer Not To Say">Prefer Not To Say</option>
+              <option value="Male">পুরুষ</option>
+              <option value="Female">মহিলা</option>
+              <option value="Other">অন্যান্য</option>
+              <option value="Prefer Not To Say">বলতে চাই না</option>
             </select>
           </div>
-          
-          {/* Removed customerIdentifier field as requested */}
         </div>
-        
+
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
+            মন্তব্য
           </label>
+
           <textarea
             id="notes"
             name="notes"
@@ -177,10 +181,10 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
             onChange={handleChange}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Additional details about the service"
+            placeholder="পরিষেবা সম্পর্কে অতিরিক্ত বিবরণ"
           ></textarea>
         </div>
-        
+
         <div>
           <button
             type="submit"
@@ -189,10 +193,10 @@ export default function ServiceForm({ onServiceLogged }: { onServiceLogged: () =
               loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >
-            {loading ? 'Logging Service...' : 'Log Service'}
+            {loading ? 'পরিষেবা লগ করা হচ্ছে...' : 'পরিষেবা লগ করুন'}
           </button>
         </div>
-        
+
         {message && (
           <div className={`p-3 rounded-md ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {message.text}
