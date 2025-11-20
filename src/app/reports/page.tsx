@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 interface Service {
   id: number;
@@ -111,73 +109,116 @@ export default function ReportsPage() {
   const totalRevenue = services.reduce((sum, service) => sum + service.amountPaid, 0);
 
   // Handle export to PDF
-  const handleExportPDF = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const doc: any = new jsPDF();
-    
-    // Add organization name
-    doc.setFontSize(22);
-    doc.text('কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার', 105, 20, { align: 'center' });
-    
-    // Add report title
-    doc.setFontSize(18);
-    doc.text('Service Report', 105, 35, { align: 'center' });
-    
-    // Add report period
-    const period = reportType === 'last15days' 
-      ? 'Last 15 Days' 
-      : `${customStartDate} to ${customEndDate}`;
-    doc.setFontSize(12);
-    doc.text(`Period: ${period}`, 20, 45);
-    
-    // Add summary section
-    doc.setFontSize(14);
-    doc.text('Report Summary', 20, 60);
-    
-    doc.setFontSize(12);
-    doc.text(`Total Services: ${totalServices}`, 20, 70);
-    doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 20, 80);
-    
-    // Add daily breakdown table
-    const dailyData = reportData.map(item => [
-      item.date,
-      item.services.toString(),
-      formatCurrency(item.revenue)
-    ]);
-    
-    // Use the imported autoTable function
-    autoTable(doc, {
-      startY: 90,
-      head: [['Date', 'Services', 'Revenue']],
-      body: dailyData,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }, // Blue header
-      styles: { fontSize: 10 }
-    });
-    
-    // Add detailed services table
-    const detailedData = services.map(service => [
-      service.serviceDate,
-      service.serviceName,
-      service.customerGender,
-      formatCurrency(service.amountPaid)
-    ]);
-    
-    // Get the final Y position after the first table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const finalY = (doc as any).lastAutoTable.finalY || 140;
-    
-    autoTable(doc, {
-      startY: finalY + 10,
-      head: [['Date', 'Service', 'Gender', 'Amount']],
-      body: detailedData,
-      theme: 'grid',
-      headStyles: { fillColor: [59, 130, 246] }, // Blue header
-      styles: { fontSize: 10 }
-    });
-    
-    // Save the PDF
-    doc.save(`service-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const handleExportPDF = async () => {
+    let element: HTMLElement | null = null;
+    try {
+      const period = reportType === 'last15days' 
+        ? 'Last 15 Days' 
+        : `${customStartDate} to ${customEndDate}`;
+
+      console.log('Starting PDF export...');
+
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reportData,
+          services,
+          totalServices,
+          totalRevenue,
+          period,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      // Get HTML content
+      const htmlContent = await response.text();
+      console.log('HTML content received, length:', htmlContent.length);
+      
+      // Create a temporary container with proper styling
+      element = document.createElement('div');
+      element.innerHTML = htmlContent;
+      element.style.display = 'block';
+      element.style.position = 'fixed';
+      element.style.left = '-9999px';
+      element.style.top = '0';
+      element.style.width = '210mm'; // A4 width
+      element.style.padding = '0';
+      element.style.margin = '0';
+      element.style.backgroundColor = 'white';
+      document.body.appendChild(element);
+
+      // Wait a bit for fonts to load
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('Importing html2canvas and jsPDF...');
+
+      // Dynamically import html2canvas and jsPDF
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      console.log('Converting HTML to canvas...');
+
+      // Convert HTML to canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      });
+
+      console.log('Canvas created, size:', canvas.width, 'x', canvas.height);
+
+      // Create PDF from canvas
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      console.log('Adding image to PDF, height:', imgHeight);
+
+      // Add image to PDF, handling multiple pages if needed
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      console.log('Saving PDF...');
+
+      // Save PDF
+      pdf.save(`service-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+
+      console.log('PDF saved successfully');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to export PDF: ${errorMessage}`);
+    } finally {
+      // Clean up
+      if (element && element.parentNode) {
+        document.body.removeChild(element);
+      }
+    }
   };
 
   // Handle export to CSV

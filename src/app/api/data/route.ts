@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     switch (type) {
       case 'recent':
         // Get recent services (last 10)
-        const recentServices = getRecentServices(10);
+        const recentServices = await getRecentServices(10);
         return NextResponse.json(recentServices);
       
       case 'stats':
@@ -32,7 +32,13 @@ export async function GET(request: Request) {
             { status: 400 }
           );
         }
-        const stats = getAggregatedStats(startDate, endDate);
+        const stats = await getAggregatedStats(startDate, endDate);
+        if ('error' in stats) {
+          return NextResponse.json(
+            { error: stats.error },
+            { status: 500 }
+          );
+        }
         return NextResponse.json(stats);
       
       case 'range':
@@ -43,23 +49,23 @@ export async function GET(request: Request) {
             { status: 400 }
           );
         }
-        const servicesInRange = getServicesByDateRange(startDate, endDate);
+        const servicesInRange = await getServicesByDateRange(startDate, endDate);
         return NextResponse.json(servicesInRange);
       
       case 'last15days':
         // Get services from last 15 days
-        const servicesLast15Days = getServicesLastNDays(15);
+        const servicesLast15Days = await getServicesLastNDays(15);
         return NextResponse.json(servicesLast15Days);
       
       case 'service-options':
         // Get all service options
-        const serviceOptions = getAllServiceOptions();
+        const serviceOptions = await getAllServiceOptions();
         return NextResponse.json(serviceOptions);
         
       case 'all':
       default:
         // Get all services
-        const allServices = getAllServices();
+        const allServices = await getAllServices();
         return NextResponse.json(allServices);
     }
   } catch (error) {
