@@ -5,8 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 const navLinks = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/reports', label: 'Reports' },
+  { href: '/', label: 'ড্যাশবোর্ড' },
+  { href: '/manage-services', label: 'সেবাসমূহ' },
+  { href: '/reports', label: 'রিপোর্ট' },
 ];
 
 export default function Navigation() {
