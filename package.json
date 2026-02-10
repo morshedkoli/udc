@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "@fontsource/noto-sans-bengali": "^4.5.14",
+    "googleapis": "^171.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
-    "mongodb": "^5.9.0",
+    "jspdf-autotable": "^5.0.2",
     "next": "^16.0.10",
     "node-fetch": "^3.3.2",
     "react": "19.2.0",
@@ -24,9 +25,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.9.9",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "^16.0.10",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

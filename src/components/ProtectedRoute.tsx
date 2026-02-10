@@ -16,9 +16,23 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="h-12 w-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-        <p className="mt-4 text-sm font-medium text-gray-600">Preparing your workspace…</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-primary)',
+      }}>
+        <div className="spinner" style={{ width: '2.5rem', height: '2.5rem' }} />
+        <p style={{
+          marginTop: '1rem',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          color: 'var(--text-tertiary)',
+        }}>
+          লোড হচ্ছে...
+        </p>
       </div>
     );
   }

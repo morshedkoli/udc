@@ -23,10 +23,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate quantity is a number (default to 1 if not provided)
+    const quantity = body.quantity ? parseFloat(body.quantity) : 1;
+    if (isNaN(quantity) || quantity < 1) {
+      return NextResponse.json(
+        { error: 'Quantity must be a valid number greater than 0' },
+        { status: 400 }
+      );
+    }
+
     // Insert the service
     const id = await insertService({
       serviceName: body.serviceName,
       serviceDate: body.serviceDate,
+      quantity: quantity,
       amountPaid: parseFloat(body.amountPaid),
       customerGender: body.customerGender,
       notes: body.notes || null

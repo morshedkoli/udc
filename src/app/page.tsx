@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import ServiceForm from '@/components/ServiceForm';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import Link from 'next/link';
 
 interface Service {
   id: number;
@@ -24,41 +24,93 @@ interface Stats {
   };
 }
 
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  trend?: string;
+}
+
+function StatCard({ title, value, icon, iconBg, iconColor, trend }: StatCardProps) {
+  return (
+    <div className="stat-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 'var(--text-xs)', fontWeight: 500, color: 'var(--text-tertiary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {title}
+          </p>
+          <p className="amount-text" style={{ fontSize: '1.75rem', lineHeight: 1.2, color: 'var(--text-primary)' }}>
+            {value}
+          </p>
+          {trend && (
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginTop: '0.375rem', fontWeight: 500 }}>
+              {trend}
+            </p>
+          )}
+        </div>
+        <div
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 'var(--radius-md)',
+            background: iconBg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: iconColor,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const [recentServices, setRecentServices] = useState<Service[]>([]);
+  const [todayServices, setTodayServices] = useState<Service[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalServices: 0,
     totalRevenue: 0,
-    genderBreakdown: {
-      male: 0,
-      female: 0,
-      other: 0,
-      preferNotToSay: 0
-    }
+    genderBreakdown: { male: 0, female: 0, other: 0, preferNotToSay: 0 },
   });
+  const [todayStats, setTodayStats] = useState({ count: 0, revenue: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Calculate date range for current month
+  const getToday = () => new Date().toISOString().split('T')[0];
+
   const getCurrentMonthRange = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return {
       startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0]
+      endDate: end.toISOString().split('T')[0],
     };
   };
 
-  // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch recent services
       const recentRes = await fetch('/api/data?type=recent');
       const recentData = await recentRes.json();
-      setRecentServices(recentData);
 
-      // Fetch stats for current month
+      // Filter today's entries
+      const today = getToday();
+      const todayEntries = (recentData as Service[]).filter(
+        (s: Service) => s.serviceDate === today
+      );
+      setTodayServices(todayEntries);
+      setTodayStats({
+        count: todayEntries.length,
+        revenue: todayEntries.reduce((sum: number, s: Service) => sum + s.amountPaid, 0),
+      });
+
+      // Fetch monthly stats
       const { startDate, endDate } = getCurrentMonthRange();
       const statsRes = await fetch(`/api/data?type=stats&startDate=${startDate}&endDate=${endDate}`);
       const statsData = await statsRes.json();
@@ -70,185 +122,278 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+  const formatAmount = (amount: number) => {
+    return '৳' + amount.toLocaleString('en-US');
   };
 
-  // Calculate gender percentages
-  const calculateGenderPercentages = () => {
-    const total = stats.genderBreakdown.male + stats.genderBreakdown.female +
-      stats.genderBreakdown.other + stats.genderBreakdown.preferNotToSay;
+  const todayFormatted = new Date().toLocaleDateString('bn-BD', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-    if (total === 0) return { male: 0, female: 0, other: 0, preferNotToSay: 0 };
-
-    return {
-      male: Math.round((stats.genderBreakdown.male / total) * 100),
-      female: Math.round((stats.genderBreakdown.female / total) * 100),
-      other: Math.round((stats.genderBreakdown.other / total) * 100),
-      preferNotToSay: Math.round((stats.genderBreakdown.preferNotToSay / total) * 100)
-    };
-  };
-
-  const genderPercentages = calculateGenderPercentages();
+  const quickActions = [
+    {
+      href: '/entry',
+      label: 'নতুন সেবা যোগ করুন',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      ),
+      color: 'var(--brand-primary)',
+    },
+    {
+      href: '/reports',
+      label: 'রিপোর্ট দেখুন',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+      ),
+      color: 'var(--color-info)',
+    },
+    {
+      href: '/manage-services',
+      label: 'সেবা পরিচালনা',
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      ),
+      color: 'var(--color-warning)',
+    },
+  ];
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
-              কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার
-            </h1>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              আপনার পরিষেবা, পেমেন্ট এবং গ্রাহক তথ্য ট্র্যাক করুন আধুনিক ও সহজ ইন্টারফেসে
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* Left Column: Form */}
-            <div className="xl:col-span-1">
-              <div className="sticky top-8">
-                <ServiceForm onServiceLogged={fetchDashboardData} />
-              </div>
+      <div className="animate-fade-in">
+        {/* Page Header */}
+        <div className="page-header">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 700, marginBottom: '0.375rem', letterSpacing: '-0.02em' }}>
+                ড্যাশবোর্ড
+              </h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>
+                {todayFormatted}
+              </p>
             </div>
+            <Link href="/entry" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              নতুন এন্ট্রি
+            </Link>
+          </div>
+        </div>
 
-            {/* Right Column: Content */}
-            <div className="xl:col-span-2 space-y-8">
-              {/* KPI Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card rounded-2xl p-6 hover-lift border-l-4 border-blue-500">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">মোট পরিষেবা</h3>
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-3xl font-bold text-slate-900">{stats.totalServices}</p>
-                    <p className="text-xs text-slate-400 font-medium">এই মাসে</p>
-                  </div>
-                </div>
-
-                <div className="glass-card rounded-2xl p-6 hover-lift border-l-4 border-emerald-500">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">মোট আয়</h3>
-                    <div className="p-2 bg-emerald-50 rounded-lg">
-                      <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <p className="text-3xl font-bold text-emerald-600">{formatCurrency(stats.totalRevenue)}</p>
-                    <p className="text-xs text-slate-400 font-medium">এই মাসে</p>
-                  </div>
-                </div>
-
-                <div className="glass-card rounded-2xl p-6 hover-lift border-l-4 border-violet-500">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">গ্রাহক লিঙ্গসমূহ</h3>
-                    <div className="p-2 bg-violet-50 rounded-lg">
-                      <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-500">পুরুষ</span>
-                      <span className="text-xs font-bold text-slate-700">{genderPercentages.male}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5">
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${genderPercentages.male}%` }}></div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-slate-500">মহিলা</span>
-                      <span className="text-xs font-bold text-slate-700">{genderPercentages.female}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-1.5">
-                      <div className="bg-pink-500 h-1.5 rounded-full" style={{ width: `${genderPercentages.female}%` }}></div>
-                    </div>
-                  </div>
-                </div>
+        <div className="page-content">
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+              <div className="spinner" style={{ width: 40, height: 40 }} />
+            </div>
+          ) : (
+            <>
+              {/* Stats Grid */}
+              <div className="grid-4" style={{ marginBottom: '1.5rem' }}>
+                <StatCard
+                  title="আজকের সেবা"
+                  value={todayStats.count}
+                  icon={
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  }
+                  iconBg="var(--brand-primary-subtle)"
+                  iconColor="var(--brand-primary)"
+                />
+                <StatCard
+                  title="আজকের আয়"
+                  value={formatAmount(todayStats.revenue)}
+                  icon={
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                    </svg>
+                  }
+                  iconBg="var(--color-success-light)"
+                  iconColor="var(--color-success)"
+                />
+                <StatCard
+                  title="এই মাসের সেবা"
+                  value={stats.totalServices}
+                  icon={
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                  }
+                  iconBg="var(--color-info-light)"
+                  iconColor="var(--color-info)"
+                />
+                <StatCard
+                  title="এই মাসের আয়"
+                  value={formatAmount(stats.totalRevenue)}
+                  icon={
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                  }
+                  iconBg="rgba(139, 92, 246, 0.1)"
+                  iconColor="#8b5cf6"
+                />
               </div>
 
-              {/* Recent Activity Table */}
-              <div className="glass-card rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white/50">
-                  <h2 className="text-lg font-bold text-slate-800">সর্বশেষ কার্যক্রম</h2>
-                  <a href="/reports" className="text-sm font-semibold text-blue-600 hover:text-blue-700">সকল রিপোর্ট →</a>
-                </div>
-
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
-                    <p className="mt-4 text-slate-500 font-medium">তথ্য লোড হচ্ছে...</p>
+              {/* Main Content Grid */}
+              <div className="responsive-grid-2">
+                {/* Today's Entries */}
+                <div className="card" style={{ overflow: 'hidden' }}>
+                  <div className="card-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 'var(--radius-md)',
+                          background: 'var(--brand-primary-subtle)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--brand-primary)',
+                        }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h2 style={{ fontWeight: 600, fontSize: 'var(--text-base)', marginBottom: '2px' }}>আজকের এন্ট্রি</h2>
+                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+                          সর্বশেষ সেবা তালিকা
+                        </p>
+                      </div>
+                    </div>
+                    <span className="badge badge-primary">{todayStats.count} টি</span>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-100">
-                      <thead className="bg-slate-50/50">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">তারিখ</th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">পরিষেবা</th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">লিঙ্গ</th>
-                          <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">পরিমাণ</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {recentServices.length > 0 ? (
-                          recentServices.map((service) => (
-                            <tr key={service.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                {service.serviceDate}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="text-sm font-semibold text-slate-900">{service.serviceName}</span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${service.customerGender === 'Male' ? 'bg-blue-50 text-blue-700' :
-                                  service.customerGender === 'Female' ? 'bg-pink-50 text-pink-700' : 'bg-slate-100 text-slate-700'
-                                  }`}>
-                                  {service.customerGender === 'Male' ? 'পুরুষ' : service.customerGender === 'Female' ? 'মহিলা' : 'অন্যান্য'}
+
+                  <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
+                    {todayServices.length > 0 ? (
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>সেবার নাম</th>
+                            <th style={{ textAlign: 'right' }}>পরিমাণ</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {todayServices.map((s) => (
+                            <tr key={s.id}>
+                              <td style={{ fontWeight: 500 }}>{s.serviceName}</td>
+                              <td style={{ textAlign: 'right' }}>
+                                <span className="amount-text" style={{ color: 'var(--color-success)', fontWeight: 600 }}>
+                                  {formatAmount(s.amountPaid)}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right">
-                                <span className="text-sm font-bold text-slate-900">{formatCurrency(service.amountPaid)}</span>
-                              </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={4} className="px-12 py-12 text-center">
-                              <div className="flex flex-col items-center">
-                                <div className="p-3 bg-slate-50 rounded-full mb-3">
-                                  <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                  </svg>
-                                </div>
-                                <p className="text-slate-400 font-medium">এখনো কোনও পরিষেবা লগ করা হয়নি</p>
-                              </div>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+                        <div
+                          style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 'var(--radius-full)',
+                            background: 'var(--bg-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1rem',
+                          }}
+                        >
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="1.5">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                        </div>
+                        <p style={{ color: 'var(--text-tertiary)', fontWeight: 500, fontSize: 'var(--text-sm)', marginBottom: '1rem' }}>
+                          আজ কোনো এন্ট্রি নেই
+                        </p>
+                        <Link href="/entry" className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>
+                          এন্ট্রি শুরু করুন
+                        </Link>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Right Panel */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {/* Quick Actions */}
+                  <div className="card" style={{ padding: '1.25rem' }}>
+                    <h3 style={{ fontWeight: 600, fontSize: 'var(--text-base)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                      </svg>
+                      দ্রুত কার্যক্রম
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {quickActions.map((action) => (
+                        <Link
+                          key={action.href}
+                          href={action.href}
+                          className="btn btn-secondary"
+                          style={{
+                            textDecoration: 'none',
+                            justifyContent: 'flex-start',
+                            borderColor: 'var(--border-subtle)',
+                          }}
+                        >
+                          <span style={{ color: action.color }}>{action.icon}</span>
+                          {action.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div className="card" style={{ padding: '1.25rem', background: 'linear-gradient(135deg, var(--brand-primary-subtle) 0%, var(--bg-surface) 100%)' }}>
+                    <h3 style={{ fontWeight: 600, fontSize: 'var(--text-base)', marginBottom: '0.75rem' }}>
+                      মাসিক সারাংশ
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>মোট সেবা</span>
+                        <span className="amount-text" style={{ fontWeight: 600 }}>{stats.totalServices} টি</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>মোট আয়</span>
+                        <span className="amount-text" style={{ fontWeight: 600, color: 'var(--color-success)' }}>
+                          {formatAmount(stats.totalRevenue)}
+                        </span>
+                      </div>
+                      <div className="divider" style={{ margin: '0.5rem 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>গড় প্রতি সেবা</span>
+                        <span className="amount-text" style={{ fontWeight: 600 }}>
+                          {stats.totalServices > 0 ? formatAmount(Math.round(stats.totalRevenue / stats.totalServices)) : '৳0'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </ProtectedRoute>
