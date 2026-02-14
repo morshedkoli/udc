@@ -12,6 +12,7 @@ if (!spreadsheetId) {
 }
 
 // Initialize Google Sheets API
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let sheets: any = null;
 
 async function getSheets() {
@@ -26,8 +27,7 @@ async function getSheets() {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 
-  const authClient = await auth.getClient();
-  sheets = google.sheets({ version: 'v4', auth: authClient });
+  sheets = google.sheets({ version: 'v4', auth });
   return sheets;
 }
 
@@ -55,6 +55,7 @@ async function ensureSheetStructure() {
       spreadsheetId,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sheetNames = response.data.sheets?.map((s: any) => s.properties?.title) || [];
 
     // Create 'services' sheet if it doesn't exist
@@ -131,6 +132,7 @@ export async function getAllServices(): Promise<ServiceRecord[]> {
   });
 
   const rows = response.data.values || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return rows.map((row: any[]) => ({
     id: row[0] || '',
     serviceName: row[1] || '',
@@ -139,7 +141,7 @@ export async function getAllServices(): Promise<ServiceRecord[]> {
     amountPaid: parseFloat(row[4]) || 0,
     customerGender: row[5] || '',
     notes: row[6] || null,
-  })).sort((a: any, b: any) => b.serviceDate.localeCompare(a.serviceDate));
+  })).sort((a: ServiceRecord, b: ServiceRecord) => b.serviceDate.localeCompare(a.serviceDate));
 }
 
 export async function getAllServiceOptions(): Promise<string[]> {
@@ -152,6 +154,7 @@ export async function getAllServiceOptions(): Promise<string[]> {
   });
 
   const rows = response.data.values || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return rows.map((row: any[]) => row[0]).filter(Boolean).sort();
 }
 
