@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import dataService from '@/lib/data-service';
 
 interface Service {
     id: number;
@@ -31,8 +32,7 @@ export default function EntryPage() {
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const res = await fetch('/api/data?type=service-options');
-                const data = await res.json();
+                const data = await dataService.getServiceOptions();
                 if (Array.isArray(data)) setServiceOptions(data);
             } catch (error) {
                 console.error('Error fetching service options:', error);
@@ -46,8 +46,7 @@ export default function EntryPage() {
     const fetchTodayEntries = useCallback(async () => {
         try {
             const today = new Date().toISOString().split('T')[0];
-            const res = await fetch(`/api/data?type=range&startDate=${today}&endDate=${today}`);
-            const data = await res.json();
+            const data = await dataService.getServices(today, today);
             if (Array.isArray(data)) {
                 setTodayEntries(data);
                 setTodayTotal(data.reduce((sum: number, s: Service) => sum + s.amountPaid, 0));
@@ -69,13 +68,9 @@ export default function EntryPage() {
         setMessage(null);
 
         try {
-            const res = await fetch('/api/services', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
+            const result = await dataService.addService(formData);
 
-            if (res.ok) {
+            if (result.success) {
                 setMessage({ type: 'success', text: '✓ সেবা সফলভাবে যোগ হয়েছে!' });
 
                 // Reset form for next entry
@@ -98,7 +93,6 @@ export default function EntryPage() {
                 // Auto-clear success message
                 setTimeout(() => setMessage(null), 3000);
             } else {
-                const result = await res.json();
                 setMessage({ type: 'error', text: result.error || 'সেবা যোগ করতে ব্যর্থ হয়েছে' });
             }
         } catch {

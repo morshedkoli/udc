@@ -31,7 +31,8 @@ export default function LoginPage() {
     setTimeout(() => {
       const success = login(pin);
       if (success) {
-        router.replace('/');
+        // Redirect to entry page (PIN-only mode: entry only)
+        router.replace('/entry');
       } else {
         setError('ভুল PIN। আবার চেষ্টা করুন।');
         setPin('');

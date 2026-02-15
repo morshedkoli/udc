@@ -1,15 +1,21 @@
 {
   "name": "service-logger-dashboard",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার — সেবা লগার ডেস্কটপ অ্যাপ",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@fontsource/noto-sans-bengali": "^4.5.14",
+    "dotenv": "^17.2.3",
     "googleapis": "^171.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.4",
@@ -25,11 +31,59 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.9.19",
-    "dotenv": "^17.2.3",
+    "concurrently": "^8.2.2",
+    "electron": "^40.4.1",
+    "electron-builder": "^26.7.0",
+    "electron-updater": "^6.7.3",
     "eslint": "^9",
     "eslint-config-next": "^16.0.10",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.kalikachudc.servicelogger",
+    "productName": "Kalikachh UDC Service Logger",
+    "copyright": "Copyright © 2024 কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার",
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "build"
+    },
+    "files": [
+      ".next/**/*",
+      "electron/**/*",
+      "src/**/*",
+      "public/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "next.config.ts",
+      ".env.local"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "UDC Service Logger",
+      "include": "build/installer.nsh"
+    }
   }
 }

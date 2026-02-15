@@ -22,6 +22,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার — সেবা লগার",
   description: "ইউনিয়ন ডিজিটাল সেন্টারের সেবা আয়ের হিসাব এবং রিপোর্ট তৈরির ড্যাশবোর্ড।",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+  },
   openGraph: {
     title: "কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার — সেবা লগার",
     description: "ইউনিয়ন ডিজিটাল সেন্টারের সেবা আয়ের হিসাব এবং রিপোর্ট তৈরির ড্যাশবোর্ড।",

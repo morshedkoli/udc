@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Link from 'next/link';
+import dataService from '@/lib/data-service';
 
 interface Service {
   id: number;
@@ -71,6 +74,16 @@ function StatCard({ title, value, icon, iconBg, iconColor, trend }: StatCardProp
 }
 
 export default function Dashboard() {
+  const router = useRouter();
+  const { isPinOnlyMode } = useAuth();
+  
+  // Redirect to entry page if in PIN-only mode
+  useEffect(() => {
+    if (isPinOnlyMode) {
+      router.replace('/entry');
+    }
+  }, [isPinOnlyMode, router]);
+  
   const [todayServices, setTodayServices] = useState<Service[]>([]);
   const [stats, setStats] = useState<Stats>({
     totalServices: 0,
@@ -95,9 +108,8 @@ export default function Dashboard() {
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch recent services
-      const recentRes = await fetch('/api/data?type=recent');
-      const recentData = await recentRes.json();
+      // Fetch all services
+      const recentData = await dataService.getServices();
 
       // Filter today's entries
       const today = getToday();
@@ -112,8 +124,7 @@ export default function Dashboard() {
 
       // Fetch monthly stats
       const { startDate, endDate } = getCurrentMonthRange();
-      const statsRes = await fetch(`/api/data?type=stats&startDate=${startDate}&endDate=${endDate}`);
-      const statsData = await statsRes.json();
+      const statsData = await dataService.getStats(startDate, endDate);
       setStats(statsData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

@@ -6,12 +6,16 @@ const PIN_STORAGE_KEY = 'service_logger_pin';
 const AUTH_STORAGE_KEY = 'service_logger_authenticated';
 const DEFAULT_PIN = '1234';
 
+// PIN-only mode: Users can only add entries, cannot view data
+const PIN_ONLY_MODE = true;
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (pin: string) => boolean;
   logout: () => void;
   setNewPin: (newPin: string) => void;
+  isPinOnlyMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, setNewPin }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, setNewPin, isPinOnlyMode: PIN_ONLY_MODE }}>
       {children}
     </AuthContext.Provider>
   );
