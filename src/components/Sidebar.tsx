@@ -177,7 +177,7 @@ export default function Sidebar() {
                                 fontSize: '1.125rem',
                                 fontWeight: 700,
                                 color: 'white',
-                                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                boxShadow: 'none',
                             }}
                         >
                             ক

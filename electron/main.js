@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
+const fs = require('fs');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -14,12 +15,29 @@ const APP_NAME = 'ServiceLoggerUDC';
 // Next.js server port
 const PORT = 3456;
 
+function ensureWindowsShellEnvironment() {
+  if (process.platform !== 'win32') return;
+
+  const candidates = [];
+  const root = process.env.SystemRoot || process.env.WINDIR || 'C:\\Windows';
+  candidates.push(path.join(root, 'System32', 'cmd.exe'));
+  candidates.push(path.join(root, 'Sysnative', 'cmd.exe'));
+
+  const validCmd = candidates.find((candidate) => fs.existsSync(candidate));
+  if (validCmd) {
+    process.env.ComSpec = validCmd;
+    process.env.COMSPEC = validCmd;
+  }
+
+  if (!process.env.SystemRoot) process.env.SystemRoot = root;
+  if (!process.env.WINDIR) process.env.WINDIR = root;
+}
+
 async function startNextServer() {
   if (isDev) return; // In dev, Next.js runs separately
 
   // Load environment variables from .env.local if it exists
   const envPath = path.join(process.resourcesPath, '.env.local');
-  const fs = require('fs');
   if (fs.existsSync(envPath)) {
     require('dotenv').config({ path: envPath });
   } else {
@@ -141,6 +159,8 @@ if (!gotTheLock) {
 
 // App event handlers
 app.whenReady().then(async () => {
+  ensureWindowsShellEnvironment();
+
   try {
     await startNextServer();
   } catch (err) {

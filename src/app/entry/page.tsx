@@ -28,6 +28,12 @@ export default function EntryPage() {
     const [todayTotal, setTodayTotal] = useState(0);
     const serviceSelectRef = useRef<HTMLSelectElement>(null);
 
+    // Add new service option state
+    const [showAddService, setShowAddService] = useState(false);
+    const [newServiceName, setNewServiceName] = useState('');
+    const [addingService, setAddingService] = useState(false);
+    const newServiceInputRef = useRef<HTMLInputElement>(null);
+
     // Fetch service options
     useEffect(() => {
         const fetchOptions = async () => {
@@ -41,6 +47,27 @@ export default function EntryPage() {
         };
         fetchOptions();
     }, []);
+
+    const handleAddServiceOption = async () => {
+        const trimmed = newServiceName.trim();
+        if (!trimmed) return;
+        setAddingService(true);
+        try {
+            const ok = await dataService.addServiceOption(trimmed);
+            if (ok) {
+                const updated = await dataService.getServiceOptions();
+                if (Array.isArray(updated)) setServiceOptions(updated);
+                setFormData((prev) => ({ ...prev, serviceName: trimmed }));
+                setNewServiceName('');
+                setShowAddService(false);
+                setTimeout(() => serviceSelectRef.current?.focus(), 100);
+            }
+        } catch (e) {
+            console.error('Error adding service option:', e);
+        } finally {
+            setAddingService(false);
+        }
+    };
 
     // Fetch today's entries
     const fetchTodayEntries = useCallback(async () => {
@@ -209,6 +236,90 @@ export default function EntryPage() {
                                                 </option>
                                             ))}
                                         </select>
+
+                                        {/* Add new service toggle */}
+                                        <div style={{ marginTop: '0.5rem' }}>
+                                            {!showAddService ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowAddService(true);
+                                                        setTimeout(() => newServiceInputRef.current?.focus(), 50);
+                                                    }}
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.375rem',
+                                                        fontSize: 'var(--text-xs)',
+                                                        color: 'var(--brand-primary)',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: '0.25rem 0',
+                                                        fontWeight: 500,
+                                                    }}
+                                                >
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                        <path d="M12 5v14M5 12h14" />
+                                                    </svg>
+                                                    নতুন সেবার নাম যোগ করুন
+                                                </button>
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        gap: '0.5rem',
+                                                        alignItems: 'center',
+                                                        padding: '0.625rem 0.75rem',
+                                                        background: 'var(--brand-primary-subtle)',
+                                                        borderRadius: 'var(--radius-md)',
+                                                        border: '1px solid var(--brand-primary-light)',
+                                                    }}
+                                                >
+                                                    <input
+                                                        ref={newServiceInputRef}
+                                                        type="text"
+                                                        className="input"
+                                                        placeholder="সেবার নাম লিখুন..."
+                                                        value={newServiceName}
+                                                        onChange={(e) => setNewServiceName(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') { e.preventDefault(); handleAddServiceOption(); }
+                                                            if (e.key === 'Escape') { setShowAddService(false); setNewServiceName(''); }
+                                                        }}
+                                                        style={{ flex: 1, padding: '0.375rem 0.625rem', fontSize: 'var(--text-sm)' }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleAddServiceOption}
+                                                        disabled={addingService || !newServiceName.trim()}
+                                                        className="btn btn-primary"
+                                                        style={{ padding: '0.375rem 0.75rem', fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}
+                                                    >
+                                                        {addingService ? 'যোগ হচ্ছে...' : 'সেভ করুন'}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setShowAddService(false); setNewServiceName(''); }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            cursor: 'pointer',
+                                                            color: 'var(--text-tertiary)',
+                                                            padding: '0.25rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                        }}
+                                                        title="বাতিল"
+                                                    >
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Quantity, Amount and Gender */}
