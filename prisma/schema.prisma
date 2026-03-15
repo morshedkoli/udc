@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  email          String   @unique
+  hashedPassword String
+  role           String   @default("admin")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+}
+
+model Customer {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  phone     String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments ServiceAssignment[]
+}
+
+model Service {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  description  String   @default("")
+  defaultPrice Float    @default(0)
+  category     String   @default("General")
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignments ServiceAssignment[]
+}
+
+model ServiceAssignment {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId   String   @db.ObjectId
+  serviceId    String   @db.ObjectId
+  customPrice  Float
+  assignedDate DateTime @default(now())
+  status       String   @default("active")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  service  Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([assignedDate])
+}
+
+model Payment {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  assignmentId  String   @db.ObjectId
+  amount        Float
+  paymentDate   DateTime @default(now())
+  method        String   @default("cash")
+  notes         String   @default("")
+  createdAt     DateTime @default(now())
+
+  assignment ServiceAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([paymentDate])
+}
+
+model ActivityLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  action     String
+  entityType String
+  entityId   String   @default("")
+  details    String   @default("")
+  userId     String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entityType])
+  @@index([createdAt])
+}

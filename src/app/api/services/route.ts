@@ -1,52 +1,62 @@
-import { NextResponse } from 'next/server';
-import { insertService } from '@/lib/db';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { serviceSchema } from "@/lib/validators";
+import { logActivity } from "@/lib/activity-logger";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category")?.trim();
+    const status = searchParams.get("status")?.trim();
+
+    const where: Record<string, unknown> = {};
+    if (category) {
+      where.category = category;
+    }
+    if (status) {
+      where.status = status;
+    }
+
+    const services = await prisma.service.findMany({
+      where,
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json(services);
+  } catch (error) {
+    console.error("Error fetching services:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch services" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const result = serviceSchema.safeParse(body);
 
-    // Validate required fields
-    if (!body.serviceName || !body.serviceDate || !body.amountPaid || !body.customerGender) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: "Validation failed", details: result.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
 
-    // Validate amountPaid is a number
-    if (isNaN(parseFloat(body.amountPaid))) {
-      return NextResponse.json(
-        { error: 'Amount paid must be a valid number' },
-        { status: 400 }
-      );
-    }
-
-    // Validate quantity is a number (default to 1 if not provided)
-    const quantity = body.quantity ? parseFloat(body.quantity) : 1;
-    if (isNaN(quantity) || quantity < 1) {
-      return NextResponse.json(
-        { error: 'Quantity must be a valid number greater than 0' },
-        { status: 400 }
-      );
-    }
-
-    // Insert the service
-    const id = await insertService({
-      serviceName: body.serviceName,
-      serviceDate: body.serviceDate,
-      quantity: quantity,
-      amountPaid: parseFloat(body.amountPaid),
-      customerGender: body.customerGender,
-      notes: body.notes || null
+    const service = await prisma.service.create({
+      data: result.data,
     });
 
-    return NextResponse.json({ id, message: 'Service logged successfully' });
+    await logActivity("created", "service", service.id, `Service "${service.name}" created`);
+
+    return NextResponse.json(service, { status: 201 });
   } catch (error) {
-    console.error('Error inserting service:', error);
+    console.error("Error creating service:", error);
     return NextResponse.json(
-      { error: 'Failed to log service' },
+      { error: "Failed to create service" },
       { status: 500 }
     );
   }
