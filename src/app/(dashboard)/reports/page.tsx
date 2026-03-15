@@ -16,6 +16,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { fetcher } from "@/lib/fetcher";
 import {
   BarChart,
   Bar,
@@ -26,7 +27,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type TabType = "daily" | "weekly" | "monthly" | "custom";
 

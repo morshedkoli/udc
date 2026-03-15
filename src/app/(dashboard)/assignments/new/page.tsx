@@ -15,9 +15,8 @@ import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatCurrency } from "@/lib/formatters";
 import { PAYMENT_METHODS } from "@/lib/constants";
+import { fetcher } from "@/lib/fetcher";
 import { toast } from "sonner";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Customer {
   id: string;

@@ -16,8 +16,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatRelativeTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 interface ActivityLog {
   id: string;
@@ -40,21 +39,6 @@ const ENTITY_TYPES = [
   { value: "assignment", label: "বরাদ্দ" },
   { value: "payment", label: "পেমেন্ট" },
 ];
-
-function getEntityColor(entityType: string) {
-  switch (entityType) {
-    case "customer":
-      return "bg-emerald-500";
-    case "service":
-      return "bg-purple-500";
-    case "assignment":
-      return "bg-blue-500";
-    case "payment":
-      return "bg-amber-500";
-    default:
-      return "bg-gray-400";
-  }
-}
 
 function getEntityIcon(entityType: string) {
   switch (entityType) {

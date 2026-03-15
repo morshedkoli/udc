@@ -58,7 +58,7 @@ export async function GET(request: Request) {
         id: service.id,
         title: service.name,
         subtitle: `${service.category} - ${service.status}`,
-        href: `/services/${service.id}`,
+        href: `/services`,
       });
     }
 
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
         id: assignment.id,
         title: `${assignment.customer.name} - ${assignment.service.name}`,
         subtitle: `${assignment.status} | Price: ${assignment.customPrice}`,
-        href: `/assignments/${assignment.id}`,
+        href: `/assignments`,
       });
     }
 

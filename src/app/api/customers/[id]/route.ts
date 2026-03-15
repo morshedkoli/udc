@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { customerSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -80,7 +82,10 @@ export async function PUT(
       data: result.data,
     });
 
-    await logActivity("updated", "customer", customer.id, `Customer "${customer.name}" updated`);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
+    await logActivity("updated", "customer", customer.id, `Customer "${customer.name}" updated`, userId);
 
     return NextResponse.json(customer);
   } catch (error) {
@@ -109,7 +114,10 @@ export async function DELETE(
 
     await prisma.customer.delete({ where: { id } });
 
-    await logActivity("deleted", "customer", id, `Customer "${existing.name}" deleted`);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
+    await logActivity("deleted", "customer", id, `Customer "${existing.name}" deleted`, userId);
 
     return NextResponse.json({ message: "Customer deleted successfully" });
   } catch (error) {

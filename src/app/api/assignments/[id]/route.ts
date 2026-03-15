@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assignmentSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -85,11 +87,15 @@ export async function PUT(
       },
     });
 
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
     await logActivity(
       "updated",
       "assignment",
       assignment.id,
-      `Assignment for "${assignment.customer.name}" - "${assignment.service.name}" updated`
+      `Assignment for "${assignment.customer.name}" - "${assignment.service.name}" updated`,
+      userId
     );
 
     return NextResponse.json(assignment);
@@ -122,11 +128,15 @@ export async function DELETE(
 
     await prisma.serviceAssignment.delete({ where: { id } });
 
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
     await logActivity(
       "deleted",
       "assignment",
       id,
-      `Assignment for "${existing.customer.name}" - "${existing.service.name}" deleted`
+      `Assignment for "${existing.customer.name}" - "${existing.service.name}" deleted`,
+      userId
     );
 
     return NextResponse.json({ message: "Assignment deleted successfully" });

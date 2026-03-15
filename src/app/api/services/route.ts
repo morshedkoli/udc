@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serviceSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -50,7 +52,10 @@ export async function POST(request: Request) {
       data: result.data,
     });
 
-    await logActivity("created", "service", service.id, `Service "${service.name}" created`);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
+    await logActivity("created", "service", service.id, `Service "${service.name}" created`, userId);
 
     return NextResponse.json(service, { status: 201 });
   } catch (error) {

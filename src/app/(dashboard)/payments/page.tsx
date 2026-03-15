@@ -15,10 +15,10 @@ import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
 import { PAYMENT_METHODS } from "@/lib/constants";
+import { fetcher } from "@/lib/fetcher";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
 
 interface Payment {
   id: string;

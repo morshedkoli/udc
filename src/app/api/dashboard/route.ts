@@ -5,101 +5,74 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    // Total customers
-    const totalCustomers = await prisma.customer.count();
-
-    // Total active services
-    const totalServices = await prisma.service.count({
-      where: { status: "active" },
-    });
-
-    // Total revenue (sum of all payments)
-    const revenueAggregate = await prisma.payment.aggregate({
-      _sum: { amount: true },
-    });
-    const totalRevenue = revenueAggregate._sum.amount || 0;
-
-    // Today's revenue
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const todayRevenueAggregate = await prisma.payment.aggregate({
-      where: {
-        paymentDate: {
-          gte: todayStart,
-          lte: todayEnd,
+    // Run independent queries in parallel
+    const [
+      totalCustomers,
+      totalServices,
+      revenueAggregate,
+      todayRevenueAggregate,
+      nonCompletedAssignments,
+      recentActivity,
+    ] = await Promise.all([
+      prisma.customer.count(),
+      prisma.service.count({ where: { status: "active" } }),
+      prisma.payment.aggregate({ _sum: { amount: true } }),
+      prisma.payment.aggregate({
+        where: {
+          paymentDate: { gte: todayStart, lte: todayEnd },
         },
-      },
-      _sum: { amount: true },
-    });
-    const todayRevenue = todayRevenueAggregate._sum.amount || 0;
+        _sum: { amount: true },
+      }),
+      prisma.serviceAssignment.findMany({
+        where: { status: { not: "completed" } },
+        include: { payments: { select: { amount: true } } },
+      }),
+      prisma.activityLog.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
 
-    // Pending amount: sum of (customPrice - totalPaid) for non-completed assignments
-    const nonCompletedAssignments = await prisma.serviceAssignment.findMany({
-      where: {
-        status: { not: "completed" },
-      },
-      include: {
-        payments: {
-          select: { amount: true },
-        },
-      },
-    });
+    const totalRevenue = revenueAggregate._sum.amount || 0;
+    const todayRevenue = todayRevenueAggregate._sum.amount || 0;
 
     const pendingAmount = nonCompletedAssignments.reduce((sum, assignment) => {
       const totalPaid = assignment.payments.reduce((pSum, p) => pSum + p.amount, 0);
       return sum + Math.max(0, assignment.customPrice - totalPaid);
     }, 0);
 
-    // Completed assignments count
-    const completedAssignments = await prisma.serviceAssignment.count({
-      where: { status: "completed" },
-    });
-
-    // Monthly revenue for last 6 months
-    const monthlyRevenue: { month: string; revenue: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
+    // Monthly revenue for last 6 months — run all 6 in parallel
+    const monthlyQueries = Array.from({ length: 6 }, (_, idx) => {
+      const i = 5 - idx;
       const date = new Date();
       date.setMonth(date.getMonth() - i);
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
-
-      const monthAggregate = await prisma.payment.aggregate({
-        where: {
-          paymentDate: {
-            gte: monthStart,
-            lte: monthEnd,
-          },
-        },
-        _sum: { amount: true },
-      });
-
       const monthLabel = monthStart.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
       });
 
-      monthlyRevenue.push({
-        month: monthLabel,
-        revenue: monthAggregate._sum.amount || 0,
-      });
-    }
-
-    // Recent activity (last 5)
-    const recentActivity = await prisma.activityLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+      return prisma.payment
+        .aggregate({
+          where: { paymentDate: { gte: monthStart, lte: monthEnd } },
+          _sum: { amount: true },
+        })
+        .then((agg) => ({
+          month: monthLabel,
+          revenue: agg._sum.amount || 0,
+        }));
     });
+
+    const monthlyRevenue = await Promise.all(monthlyQueries);
 
     return NextResponse.json({
       totalCustomers,
@@ -107,7 +80,6 @@ export async function GET() {
       totalRevenue,
       todayRevenue,
       pendingAmount,
-      completedAssignments,
       monthlyRevenue,
       recentActivity,
     });

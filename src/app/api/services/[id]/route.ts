@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { serviceSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -62,7 +64,10 @@ export async function PUT(
       data: result.data,
     });
 
-    await logActivity("updated", "service", service.id, `Service "${service.name}" updated`);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
+    await logActivity("updated", "service", service.id, `Service "${service.name}" updated`, userId);
 
     return NextResponse.json(service);
   } catch (error) {
@@ -91,7 +96,10 @@ export async function DELETE(
 
     await prisma.service.delete({ where: { id } });
 
-    await logActivity("deleted", "service", id, `Service "${existing.name}" deleted`);
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
+    await logActivity("deleted", "service", id, `Service "${existing.name}" deleted`, userId);
 
     return NextResponse.json({ message: "Service deleted successfully" });
   } catch (error) {

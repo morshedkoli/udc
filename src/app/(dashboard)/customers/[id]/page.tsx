@@ -21,8 +21,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
 import { ASSIGNMENT_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 interface Payment {
   id: string;

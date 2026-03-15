@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assignmentSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -28,6 +30,7 @@ export async function GET(request: Request) {
       include: {
         customer: true,
         service: true,
+        payments: true,
       },
       orderBy: { assignedDate: "desc" },
     });
@@ -74,11 +77,15 @@ export async function POST(request: Request) {
       },
     });
 
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
     await logActivity(
       "created",
       "assignment",
       assignment.id,
-      `Assignment for "${assignment.customer.name}" - "${assignment.service.name}" created`
+      `Assignment for "${assignment.customer.name}" - "${assignment.service.name}" created`,
+      userId
     );
 
     return NextResponse.json(assignment, { status: 201 });

@@ -9,15 +9,13 @@ import {
   ClipboardList,
   Eye,
   Filter,
-  Loader2,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
 import { ASSIGNMENT_STATUSES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+import { fetcher } from "@/lib/fetcher";
 
 interface Assignment {
   id: string;

@@ -2,15 +2,10 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login", "/api/auth"];
+const publicPaths = ["/login"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Allow public paths
-  if (publicPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
-  }
 
   // Allow static files and Next.js internals
   if (
@@ -21,7 +16,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Allow NextAuth API routes
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   const token = await getToken({ req: request });
+
+  // Redirect authenticated users away from login
+  if (pathname.startsWith("/login") && token) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Allow public paths
+  if (publicPaths.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);

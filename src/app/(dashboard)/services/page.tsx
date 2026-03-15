@@ -12,7 +12,6 @@ import {
   Trash2,
   X,
   Loader2,
-  Briefcase,
   PackageOpen,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
@@ -22,9 +21,9 @@ import { formatCurrency } from "@/lib/formatters";
 import { SERVICE_CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { fetcher } from "@/lib/fetcher";
 import { useDebounce } from "@/hooks/use-debounce";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Service {
   id: string;

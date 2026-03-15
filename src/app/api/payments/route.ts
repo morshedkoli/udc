@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { paymentSchema } from "@/lib/validators";
 import { logActivity } from "@/lib/activity-logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -73,6 +75,9 @@ export async function POST(request: Request) {
       },
     });
 
+    const session = await getServerSession(authOptions);
+    const userId = (session?.user as { id?: string })?.id;
+
     // Check if total payments for this assignment >= customPrice, auto-complete
     const totalPaid = await prisma.payment.aggregate({
       where: { assignmentId: result.data.assignmentId },
@@ -97,7 +102,8 @@ export async function POST(request: Request) {
         "auto-completed",
         "assignment",
         assignment.id,
-        `Assignment auto-completed: total payments reached ${totalPaid._sum.amount}`
+        `Assignment auto-completed: total payments reached ${totalPaid._sum.amount}`,
+        userId
       );
     }
 
@@ -105,7 +111,8 @@ export async function POST(request: Request) {
       "created",
       "payment",
       payment.id,
-      `Payment of ${payment.amount} for "${payment.assignment.customer.name}" - "${payment.assignment.service.name}"`
+      `Payment of ${payment.amount} for "${payment.assignment.customer.name}" - "${payment.assignment.service.name}"`,
+      userId
     );
 
     return NextResponse.json(payment, { status: 201 });

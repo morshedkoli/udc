@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import useSWR, { mutate } from "swr";
 import { useForm } from "react-hook-form";
@@ -17,15 +17,16 @@ import {
   Eye,
   Phone,
   Mail,
+  Sparkles,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { customerSchema, type CustomerInput } from "@/lib/validators";
+import { fetcher } from "@/lib/fetcher";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
 import Link from "next/link";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Customer {
   id: string;
@@ -37,7 +38,7 @@ interface Customer {
   createdAt: string;
 }
 
-export default function CustomersPage() {
+function CustomersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
@@ -51,7 +52,6 @@ export default function CustomersPage() {
   const apiUrl = `/api/customers${debouncedSearch ? `?q=${encodeURIComponent(debouncedSearch)}` : ""}`;
   const { data: customers, error, isLoading } = useSWR<Customer[]>(apiUrl, fetcher);
 
-  // Open modal if ?new=true
   useEffect(() => {
     if (searchParams.get("new") === "true") {
       openAddModal();
@@ -147,7 +147,7 @@ export default function CustomersPage() {
       <PageHeader title="গ্রাহক ব্যবস্থাপনা" subtitle="সকল গ্রাহকের তালিকা ও ব্যবস্থাপনা">
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors"
+          className="btn-primary"
         >
           <Plus className="w-4 h-4" />
           নতুন গ্রাহক
@@ -157,66 +157,58 @@ export default function CustomersPage() {
       {/* Search */}
       <div className="mb-6">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
           <input
             type="text"
             placeholder="নাম, ফোন বা ইমেইল দিয়ে খুঁজুন..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+            className="input-premium pl-10"
           />
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-[var(--color-error-light)] border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl mb-6">
           ডাটা লোড করতে সমস্যা হয়েছে।
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] overflow-hidden">
+      <div className="dashboard-card overflow-hidden">
         {isLoading ? (
-          <div className="p-8">
-            <div className="space-y-4">
+          <div className="p-6">
+            <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="animate-pulse flex items-center gap-4">
-                  <div className="w-8 h-8 bg-[var(--bg-muted)] rounded-full" />
-                  <div className="h-4 w-36 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-28 bg-[var(--bg-muted)] rounded" />
+                  <div className="w-10 h-10 bg-[var(--bg-muted)] rounded-xl" />
                   <div className="h-4 w-40 bg-[var(--bg-muted)] rounded" />
+                  <div className="h-4 w-32 bg-[var(--bg-muted)] rounded" />
+                  <div className="h-4 w-48 bg-[var(--bg-muted)] rounded" />
                 </div>
               ))}
             </div>
           </div>
         ) : !customers || customers.length === 0 ? (
-          <div className="text-center py-16">
-            <Users className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--text-secondary)] mb-1">
-              কোনো গ্রাহক পাওয়া যায়নি
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Users className="w-6 h-6 text-[var(--text-tertiary)]" />
+            </div>
+            <p className="empty-state-title">কোনো গ্রাহক পাওয়া যায়নি</p>
+            <p className="empty-state-description">
               নতুন গ্রাহক যোগ করতে উপরের বাটনে ক্লিক করুন
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--bg-muted)]">
+            <table className="table-premium">
+              <thead>
                 <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    নাম
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    ফোন
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    ইমেইল
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    কার্যক্রম
-                  </th>
+                  <th>নাম</th>
+                  <th>ফোন</th>
+                  <th>ইমেইল</th>
+                  <th className="text-right">কার্যক্রম</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,12 +218,11 @@ export default function CustomersPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                   >
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                    <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[var(--brand-primary-light)] flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-[var(--brand-primary)]">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                          <span className="text-xs font-bold text-slate-900">
                             {customer.name.charAt(0)}
                           </span>
                         </div>
@@ -240,9 +231,9 @@ export default function CustomersPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                    <td>
                       {customer.phone ? (
-                        <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                           <Phone className="w-3.5 h-3.5" />
                           <span>{customer.phone}</span>
                         </div>
@@ -250,9 +241,9 @@ export default function CustomersPage() {
                         <span className="text-[var(--text-tertiary)]">--</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                    <td>
                       {customer.email ? (
-                        <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                           <Mail className="w-3.5 h-3.5" />
                           <span className="truncate max-w-[200px]">
                             {customer.email}
@@ -262,18 +253,18 @@ export default function CustomersPage() {
                         <span className="text-[var(--text-tertiary)]">--</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-right">
+                    <td>
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           href={`/customers/${customer.id}`}
-                          className="p-1.5 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                          className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-blue-600 transition-all duration-200"
                           title="বিস্তারিত"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
                         <button
                           onClick={() => openEditModal(customer)}
-                          className="p-1.5 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
+                          className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-amber-600 transition-all duration-200"
                           title="সম্পাদনা"
                         >
                           <Pencil className="w-4 h-4" />
@@ -281,7 +272,7 @@ export default function CustomersPage() {
                         <button
                           onClick={() => handleDelete(customer)}
                           disabled={deletingId === customer.id}
-                          className="p-1.5 rounded-md hover:bg-red-50 text-[var(--text-secondary)] hover:text-red-600 transition-colors disabled:opacity-50"
+                          className="p-2 rounded-lg hover:bg-rose-50 text-[var(--text-secondary)] hover:text-rose-600 transition-all duration-200 disabled:opacity-50"
                           title="মুছুন"
                         >
                           {deletingId === customer.id ? (
@@ -307,68 +298,73 @@ export default function CustomersPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="modal-overlay"
           >
             <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="modal-backdrop"
               onClick={closeModal}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-[var(--bg-surface)] rounded-[var(--radius-xl)] shadow-xl border border-[var(--border-subtle)] p-6"
+              className="modal-content"
             >
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  {editingCustomer ? "গ্রাহক সম্পাদনা" : "নতুন গ্রাহক যোগ করুন"}
-                </h2>
+              <div className="modal-header">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <Sparkles className="w-4 h-4 text-slate-900" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    {editingCustomer ? "গ্রাহক সম্পাদনা" : "নতুন গ্রাহক যোগ করুন"}
+                  </h2>
+                </div>
                 <button
                   onClick={closeModal}
-                  className="p-1 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-tertiary)]"
+                  className="p-1.5 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-tertiary)] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="modal-body space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                     নাম *
                   </label>
                   <input
                     {...register("name")}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                    className="input-premium"
                     placeholder="গ্রাহকের নাম"
                   />
                   {errors.name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+                    <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                       ফোন
                     </label>
                     <input
                       {...register("phone")}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="input-premium"
                       placeholder="০১XXXXXXXXX"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                       ইমেইল
                     </label>
                     <input
                       {...register("email")}
                       type="email"
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="input-premium"
                       placeholder="email@example.com"
                     />
                     {errors.email && (
-                      <p className="text-xs text-red-500 mt-1">
+                      <p className="text-xs text-rose-500 mt-1">
                         {errors.email.message}
                       </p>
                     )}
@@ -376,40 +372,40 @@ export default function CustomersPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                     ঠিকানা
                   </label>
                   <input
                     {...register("address")}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                    className="input-premium"
                     placeholder="ঠিকানা (ঐচ্ছিক)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
                     নোট
                   </label>
                   <textarea
                     {...register("notes")}
                     rows={2}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)] resize-none"
+                    className="input-premium resize-none"
                     placeholder="অতিরিক্ত তথ্য (ঐচ্ছিক)"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="modal-footer !border-t-0 !p-0 !mt-4">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] rounded-lg transition-colors"
+                    className="btn-ghost"
                   >
                     বাতিল
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                    className="btn-primary"
                   >
                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                     {editingCustomer ? "আপডেট করুন" : "যোগ করুন"}
@@ -421,5 +417,13 @@ export default function CustomersPage() {
         )}
       </AnimatePresence>
     </PageShell>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense>
+      <CustomersContent />
+    </Suspense>
   );
 }
