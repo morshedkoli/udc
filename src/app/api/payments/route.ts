@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     // Check if total payments for this assignment >= customPrice, auto-complete
     const totalPaid = await prisma.payment.aggregate({

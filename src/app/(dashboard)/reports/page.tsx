@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import useSWR from "swr";
 import {
@@ -11,12 +11,14 @@ import {
   CalendarDays,
   Loader2,
   BarChart3,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { fetcher } from "@/lib/fetcher";
+import type { ReportsData } from "@/types";
 import {
   BarChart,
   Bar,
@@ -27,56 +29,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+type TabType = "daily" | "weekly" | "biweekly" | "monthly" | "yearly" | "custom";
 
-type TabType = "daily" | "weekly" | "monthly" | "custom";
-
-interface Assignment {
-  id: string;
-  customPrice: number;
-  assignedDate: string;
-  status: string;
-  notes: string;
-  customer: {
-    id: string;
-    name: string;
-  };
-  service: {
-    id: string;
-    name: string;
-  };
-  payments: {
-    id: string;
-    amount: number;
-    paymentDate: string;
-    method: string;
-  }[];
-}
-
-function getDateRange(tab: TabType, customStart: string, customEnd: string) {
-  const now = new Date();
-  let start: Date;
-  let end: Date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
-  switch (tab) {
-    case "daily":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      break;
-    case "weekly":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-      break;
-    case "monthly":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
-    case "custom":
-      start = customStart ? new Date(customStart) : new Date(now.getFullYear(), now.getMonth(), 1);
-      end = customEnd ? new Date(customEnd + "T23:59:59") : end;
-      break;
-    default:
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-
-  return { start, end };
-}
+const TABS: { key: TabType; label: string }[] = [
+  { key: "daily", label: "Daily" },
+  { key: "weekly", label: "Weekly" },
+  { key: "biweekly", label: "15 Days" },
+  { key: "monthly", label: "Monthly" },
+  { key: "yearly", label: "Yearly" },
+  { key: "custom", label: "Custom" },
+];
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("daily");
@@ -89,65 +51,28 @@ export default function ReportsPage() {
     return new Date().toISOString().split("T")[0];
   });
 
-  const { data: assignments, isLoading } = useSWR<Assignment[]>(
-    "/api/assignments",
+  const queryParams = new URLSearchParams({ period: activeTab });
+  if (activeTab === "custom") {
+    queryParams.set("startDate", customStart);
+    queryParams.set("endDate", customEnd);
+  }
+
+  const { data, isLoading, error } = useSWR<ReportsData>(
+    `/api/reports?${queryParams.toString()}`,
     fetcher
   );
 
-  const tabs: { key: TabType; label: string }[] = [
-    { key: "daily", label: "দৈনিক" },
-    { key: "weekly", label: "সাপ্তাহিক" },
-    { key: "monthly", label: "মাসিক" },
-    { key: "custom", label: "কাস্টম" },
-  ];
-
-  // Filter assignments by date range
-  const { filteredAssignments, totalRevenue, chartData } = useMemo(() => {
-    if (!assignments) return { filteredAssignments: [], totalRevenue: 0, chartData: [] };
-
-    const { start, end } = getDateRange(activeTab, customStart, customEnd);
-
-    const filtered = assignments.filter((a) => {
-      const date = new Date(a.assignedDate);
-      return date >= start && date <= end;
-    });
-
-    // Calculate total revenue from payments within filtered assignments
-    let revenue = 0;
-    filtered.forEach((a) => {
-      if (a.payments) {
-        a.payments.forEach((p) => {
-          revenue += p.amount;
-        });
-      }
-    });
-
-    // Group revenue by day for chart
-    const revenueByDay: Record<string, number> = {};
-    filtered.forEach((a) => {
-      if (a.payments) {
-        a.payments.forEach((p) => {
-          const day = new Date(p.paymentDate).toISOString().split("T")[0];
-          revenueByDay[day] = (revenueByDay[day] || 0) + p.amount;
-        });
-      }
-    });
-
-    const chart = Object.entries(revenueByDay)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, amount]) => ({
-        date: new Date(date).toLocaleDateString("bn-BD", { day: "numeric", month: "short" }),
-        revenue: amount,
-      }));
-
-    return { filteredAssignments: filtered, totalRevenue: revenue, chartData: chart };
-  }, [assignments, activeTab, customStart, customEnd]);
+  const assignments = data?.assignments || [];
+  const totalRevenue = data?.totalRevenue || 0;
+  const chartData = data?.chartData || [];
+  const topServices = data?.topServices || [];
+  const pendingPayments = data?.pendingPayments || 0;
 
   function exportCSV() {
-    if (filteredAssignments.length === 0) return;
+    if (assignments.length === 0) return;
 
-    const headers = ["তারিখ", "গ্রাহক", "সেবা", "মূল্য", "স্ট্যাটাস"];
-    const rows = filteredAssignments.map((a) => [
+    const headers = ["Date", "Customer", "Service", "Price", "Status"];
+    const rows = assignments.map((a) => [
       new Date(a.assignedDate).toLocaleDateString("en-CA"),
       a.customer.name,
       a.service.name,
@@ -157,9 +82,7 @@ export default function ReportsPage() {
 
     const csvContent =
       "\uFEFF" +
-      [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join(
-        "\n"
-      );
+      [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -171,7 +94,7 @@ export default function ReportsPage() {
   }
 
   async function exportPDF() {
-    if (filteredAssignments.length === 0) return;
+    if (assignments.length === 0) return;
 
     try {
       const { default: jsPDF } = await import("jspdf");
@@ -184,11 +107,13 @@ export default function ReportsPage() {
 
       doc.setFontSize(10);
       doc.text(`Generated: ${new Date().toLocaleDateString("en-CA")}`, 14, 28);
-      doc.text(`Period: ${activeTab}`, 14, 34);
-      doc.text(`Total Assignments: ${filteredAssignments.length}`, 14, 40);
-      doc.text(`Total Revenue: ${totalRevenue}`, 14, 46);
+      doc.text(`Period: ${TABS.find((t) => t.key === activeTab)?.label || activeTab}`, 14, 34);
+      doc.text(`Total Assignments: ${assignments.length}`, 14, 40);
+      doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, 14, 46);
+      doc.text(`Pending Payments: ${formatCurrency(pendingPayments)}`, 14, 52);
 
-      const tableData = filteredAssignments.map((a) => [
+      // Main assignments table
+      const tableData = assignments.map((a) => [
         new Date(a.assignedDate).toLocaleDateString("en-CA"),
         a.customer.name,
         a.service.name,
@@ -197,26 +122,42 @@ export default function ReportsPage() {
       ]);
 
       autoTable(doc, {
-        startY: 54,
+        startY: 60,
         head: [["Date", "Customer", "Service", "Price", "Status"]],
         body: tableData,
         styles: { fontSize: 9 },
         headStyles: { fillColor: [99, 102, 241] },
       });
 
+      // Top services table
+      if (topServices.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const finalY = (doc as any).lastAutoTable?.finalY || 180;
+        doc.setFontSize(12);
+        doc.text("Top Services", 14, finalY + 12);
+
+        autoTable(doc, {
+          startY: finalY + 18,
+          head: [["Service", "Assignments", "Revenue"]],
+          body: topServices.map((s) => [s.name, s.count.toString(), s.revenue.toString()]),
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [124, 58, 237] },
+        });
+      }
+
       doc.save(`report-${activeTab}-${new Date().toISOString().split("T")[0]}.pdf`);
     } catch {
-      // PDF generation failed silently
+      // PDF generation failed
     }
   }
 
   return (
     <PageShell>
-      <PageHeader title="রিপোর্ট" subtitle="সেবা বরাদ্দ ও আয়ের বিস্তারিত রিপোর্ট">
+      <PageHeader title="Reports" subtitle="Detailed service assignment and revenue reports">
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            disabled={filteredAssignments.length === 0}
+            disabled={assignments.length === 0}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] hover:bg-[var(--bg-surface-hover)] rounded-lg transition-colors disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
@@ -224,7 +165,7 @@ export default function ReportsPage() {
           </button>
           <button
             onClick={exportPDF}
-            disabled={filteredAssignments.length === 0}
+            disabled={assignments.length === 0}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] hover:bg-[var(--bg-surface-hover)] rounded-lg transition-colors disabled:opacity-50"
           >
             <FileText className="w-4 h-4" />
@@ -235,33 +176,31 @@ export default function ReportsPage() {
 
       {/* Tab Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
-        <div className="flex gap-1 bg-[var(--bg-muted)] rounded-lg p-1 w-fit">
-          {tabs.map((tab) => (
+        <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit flex-wrap">
+          {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
                 activeTab === tab.key
-                  ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              )}
+                  ? "bg-surface text-primary shadow-sm"
+                  : "text-secondary hover:text-primary"
+              }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Custom date range */}
         {activeTab === "custom" && (
           <div className="flex items-center gap-2">
             <input
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-1.5 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+              className="form-input"
             />
-            <span className="text-sm text-[var(--text-tertiary)]">থেকে</span>
+            <span className="text-sm text-tertiary">to</span>
             <input
               type="date"
               value={customEnd}
@@ -272,14 +211,19 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {isLoading ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertCircle className="w-10 h-10 text-rose-400 mb-3" />
+          <p className="text-sm text-[var(--text-secondary)]">Failed to load report data</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
         </div>
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -287,15 +231,15 @@ export default function ReportsPage() {
               className="stat-card"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
                   <ClipboardList className="w-4 h-4 text-blue-500" />
                 </div>
                 <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                  মোট বরাদ্দ
+                  Total Assignments
                 </span>
               </div>
               <p className="amount-text text-xl text-[var(--text-primary)]">
-                {filteredAssignments.length}
+                {assignments.length}
               </p>
             </motion.div>
 
@@ -306,45 +250,104 @@ export default function ReportsPage() {
               className="stat-card"
             >
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
                   <Wallet className="w-4 h-4 text-emerald-500" />
                 </div>
                 <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-                  মোট আয়
+                  Total Revenue
                 </span>
               </div>
               <p className="amount-text text-xl text-[var(--text-primary)]">
                 {formatCurrency(totalRevenue)}
               </p>
             </motion.div>
-          </div>
 
-          {/* Chart */}
-          {chartData.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6 mb-6"
+              className="stat-card"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                </div>
+                <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+                  Pending Payments
+                </span>
+              </div>
+              <p className="amount-text text-xl text-[var(--text-primary)]">
+                {formatCurrency(pendingPayments)}
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Top Services */}
+          {topServices.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-[var(--text-secondary)]" />
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                  Top Services
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {topServices.slice(0, 5).map((svc, i) => (
+                  <div key={svc.name} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-[var(--text-tertiary)] w-5">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-[var(--text-primary)] truncate">
+                          {svc.name}
+                        </span>
+                        <span className="text-sm font-semibold text-[var(--text-primary)] ml-2">
+                          {formatCurrency(svc.revenue)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                            style={{
+                              width: `${Math.min(100, (svc.revenue / (topServices[0]?.revenue || 1)) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">
+                          {svc.count} {svc.count === 1 ? "assignment" : "assignments"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Revenue Chart */}
+          {chartData.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-6"
             >
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-[var(--text-secondary)]" />
                 <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                  দৈনিক আয়ের চার্ট
+                  Revenue Chart
                 </h2>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--border-subtle)"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      stroke="var(--text-tertiary)"
-                      fontSize={12}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                    <XAxis dataKey="date" stroke="var(--text-tertiary)" fontSize={12} />
                     <YAxis stroke="var(--text-tertiary)" fontSize={12} />
                     <Tooltip
                       contentStyle={{
@@ -353,16 +356,9 @@ export default function ReportsPage() {
                         borderRadius: "8px",
                         fontSize: "13px",
                       }}
-                      formatter={(value) => [
-                        formatCurrency(Number(value) || 0),
-                        "আয়",
-                      ]}
+                      formatter={(value) => [formatCurrency(Number(value) || 0), "Revenue"]}
                     />
-                    <Bar
-                      dataKey="revenue"
-                      fill="#6366f1"
-                      radius={[4, 4, 0, 0]}
-                    />
+                    <Bar dataKey="revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -370,15 +366,15 @@ export default function ReportsPage() {
           )}
 
           {/* Data Table */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] overflow-hidden">
-            {filteredAssignments.length === 0 ? (
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+            {assignments.length === 0 ? (
               <div className="text-center py-16">
                 <CalendarDays className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-3" />
                 <p className="text-sm text-[var(--text-secondary)] mb-1">
-                  এই সময়কালে কোনো বরাদ্দ পাওয়া যায়নি
+                  No assignments found for this period
                 </p>
                 <p className="text-xs text-[var(--text-tertiary)]">
-                  অন্য তারিখ বা সময়কাল নির্বাচন করুন
+                  Try selecting a different date range
                 </p>
               </div>
             ) : (
@@ -387,21 +383,24 @@ export default function ReportsPage() {
                   <thead className="bg-[var(--bg-muted)]">
                     <tr>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                        তারিখ
+                        Date
                       </th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                        গ্রাহক
+                        Customer
                       </th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                        সেবা
+                        Service
+                      </th>
+                      <th className="px-4 py-2.5 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                        Price
                       </th>
                       <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                        মূল্য
+                        Status
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAssignments.map((assignment, i) => (
+                    {assignments.map((assignment, i) => (
                       <motion.tr
                         key={assignment.id}
                         initial={{ opacity: 0 }}
@@ -410,7 +409,7 @@ export default function ReportsPage() {
                         className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                       >
                         <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                          {formatBanglaDate(assignment.assignedDate)}
+                          {formatDate(assignment.assignedDate)}
                         </td>
                         <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
                           <span className="font-medium text-[var(--text-primary)]">
@@ -420,9 +419,20 @@ export default function ReportsPage() {
                         <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-primary)]">
                           {assignment.service.name}
                         </td>
-                        <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                        <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-right">
                           <span className="amount-text text-[var(--text-primary)]">
                             {formatCurrency(assignment.customPrice)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 border-t border-subtle">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            assignment.status === "completed"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : assignment.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}>
+                            {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
                           </span>
                         </td>
                       </motion.tr>

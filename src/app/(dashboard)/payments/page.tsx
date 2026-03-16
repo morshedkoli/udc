@@ -13,46 +13,12 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { fetcher } from "@/lib/fetcher";
 import { toast } from "sonner";
-
-
-
-interface Payment {
-  id: string;
-  amount: number;
-  paymentDate: string;
-  method: string;
-  notes: string;
-  assignment: {
-    id: string;
-    customPrice: number;
-    customer: {
-      id: string;
-      name: string;
-    };
-    service: {
-      id: string;
-      name: string;
-    };
-  };
-}
-
-interface Assignment {
-  id: string;
-  customPrice: number;
-  status: string;
-  customer: {
-    id: string;
-    name: string;
-  };
-  service: {
-    id: string;
-    name: string;
-  };
-}
+import { api } from "@/lib/api-client";
+import type { PaymentWithRelations, AssignmentWithRelations } from "@/types";
 
 export default function PaymentsPage() {
   const [showModal, setShowModal] = useState(false);
@@ -61,14 +27,14 @@ export default function PaymentsPage() {
   // Modal form state
   const [assignmentId, setAssignmentId] = useState("");
   const [amount, setAmount] = useState<number>(0);
-  const [method, setMethod] = useState("cash");
+  const [method, setMethod] = useState<"cash" | "bkash" | "nagad" | "bank" | "other">("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
 
-  const { data: payments, error, isLoading } = useSWR<Payment[]>(
+  const { data: payments, error, isLoading } = useSWR<PaymentWithRelations[]>(
     "/api/payments",
     fetcher
   );
-  const { data: activeAssignments } = useSWR<Assignment[]>(
+  const { data: activeAssignments } = useSWR<AssignmentWithRelations[]>(
     "/api/assignments?status=active",
     fetcher
   );
@@ -108,38 +74,29 @@ export default function PaymentsPage() {
     e.preventDefault();
 
     if (!assignmentId) {
-      toast.error("বরাদ্দ নির্বাচন করুন");
+      toast.error("Please select an assignment");
       return;
     }
     if (amount <= 0) {
-      toast.error("পরিমাণ সঠিকভাবে লিখুন");
+      toast.error("Please enter a valid amount");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/payments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assignmentId,
-          amount,
-          method,
-          notes: paymentNotes,
-        }),
+      await api.createPayment({
+        assignmentId,
+        amount,
+        method,
+        notes: paymentNotes,
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "পেমেন্ট তৈরি ব্যর্থ");
-      }
-
-      toast.success("পেমেন্ট সফলভাবে যোগ হয়েছে");
+      toast.success("Payment added successfully");
       mutate("/api/payments");
       mutate("/api/assignments?status=active");
       closeModal();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "কিছু সমস্যা হয়েছে";
+      const message = err instanceof Error ? err.message : "Something went wrong";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -148,18 +105,18 @@ export default function PaymentsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="পেমেন্ট" subtitle="সকল পেমেন্টের তালিকা ও ব্যবস্থাপনা">
+      <PageHeader title="Payment Management" subtitle="View and manage all payments">
         <button
           onClick={openModal}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors"
+          className="btn btn-primary"
         >
-          <Plus className="w-4 h-4" />
-          নতুন পেমেন্ট
+          <Plus />
+          New Payment
         </button>
       </PageHeader>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -167,14 +124,14 @@ export default function PaymentsPage() {
           className="stat-card"
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-indigo-500" />
+            <div className="stat-icon">
+              <Wallet />
             </div>
-            <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-              মোট পেমেন্ট
+            <span className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Total Payments
             </span>
           </div>
-          <p className="amount-text text-xl text-[var(--text-primary)]">
+          <p className="amount-text text-xl text-primary">
             {isLoading ? "..." : formatCurrency(totalPayments)}
           </p>
         </motion.div>
@@ -186,14 +143,14 @@ export default function PaymentsPage() {
           className="stat-card"
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <div className="stat-icon success">
+              <TrendingUp />
             </div>
-            <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-              আজকের পেমেন্ট
+            <span className="text-xs font-medium text-secondary uppercase tracking-wider">
+              Today's Payments
             </span>
           </div>
-          <p className="amount-text text-xl text-[var(--text-primary)]">
+          <p className="amount-text text-xl text-primary">
             {isLoading ? "..." : formatCurrency(todayPayments)}
           </p>
         </motion.div>
@@ -201,57 +158,43 @@ export default function PaymentsPage() {
 
       {/* Error */}
       {error && (
-        <div className="bg-[var(--color-error-light)] border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          ডাটা লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।
+        <div className="alert-error">
+          Failed to load data. Please try again.
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] overflow-hidden">
+      <div className="table-container">
         {isLoading ? (
           <div className="p-8">
             <div className="space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="animate-pulse flex items-center gap-4">
-                  <div className="h-4 w-28 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-32 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-28 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-20 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-16 bg-[var(--bg-muted)] rounded" />
+                <div key={i} className="skeleton-row">
+                  <div className="skeleton-line-md" />
+                  <div className="skeleton-line-lg" />
+                  <div className="skeleton-line-md" />
+                  <div className="skeleton-line-sm" />
+                  <div className="skeleton-line-sm" />
                 </div>
               ))}
             </div>
           </div>
         ) : !payments || payments.length === 0 ? (
-          <div className="text-center py-16">
-            <CreditCard className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--text-secondary)] mb-1">
-              কোনো পেমেন্ট পাওয়া যায়নি
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              নতুন পেমেন্ট যোগ করতে উপরের বাটনে ক্লিক করুন
-            </p>
+          <div className="empty-state-small">
+            <CreditCard />
+            <p>No payments found</p>
+            <span>Click the button above to add a new payment</span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--bg-muted)]">
+          <div className="table-overflow">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    তারিখ
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    গ্রাহক
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    সেবা
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    পরিমাণ
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    পদ্ধতি
-                  </th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Service</th>
+                  <th>Amount</th>
+                  <th>Method</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,26 +204,25 @@ export default function PaymentsPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                   >
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                      {formatBanglaDate(payment.paymentDate)}
+                    <td className="text-secondary">
+                      {formatDate(payment.paymentDate)}
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                      <span className="font-medium text-[var(--text-primary)]">
+                    <td>
+                      <span className="font-medium text-primary">
                         {payment.assignment.customer.name}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-primary)]">
+                    <td className="text-primary">
                       {payment.assignment.service.name}
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                      <span className="amount-text text-emerald-600">
+                    <td>
+                      <span className="amount-text text-success">
                         {formatCurrency(payment.amount)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--bg-muted)] text-[var(--text-secondary)]">
+                    <td>
+                      <span className="category-badge">
                         {getMethodLabel(payment.method)}
                       </span>
                     </td>
@@ -299,25 +241,25 @@ export default function PaymentsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="modal-overlay-full"
           >
             <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="modal-backdrop-full"
               onClick={closeModal}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-[var(--bg-surface)] rounded-[var(--radius-xl)] shadow-xl border border-[var(--border-subtle)] p-6"
+              className="modal-content-full"
             >
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  নতুন পেমেন্ট যোগ করুন
+                <h2 className="text-lg font-semibold text-primary">
+                  Add New Payment
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="p-1 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-tertiary)]"
+                  className="action-btn"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -325,9 +267,9 @@ export default function PaymentsPage() {
 
               <form onSubmit={handleSubmitPayment} className="space-y-4">
                 {/* Assignment Select */}
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                    বরাদ্দ (গ্রাহক - সেবা) *
+                <div className="form-group">
+                  <label className="form-label">
+                    Assignment (Customer - Service) *
                   </label>
                   <select
                     value={assignmentId}
@@ -340,9 +282,9 @@ export default function PaymentsPage() {
                         setAmount(selected.customPrice);
                       }
                     }}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                    className="form-select"
                   >
-                    <option value="">-- বরাদ্দ নির্বাচন করুন --</option>
+                    <option value="">-- Select an assignment --</option>
                     {(activeAssignments || []).map((a) => (
                       <option key={a.id} value={a.id}>
                         {a.customer.name} - {a.service.name} ({formatCurrency(a.customPrice)})
@@ -352,10 +294,10 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Amount & Method */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="form-row">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      পরিমাণ &#2547; *
+                    <label className="form-label">
+                      Amount *
                     </label>
                     <input
                       type="number"
@@ -363,18 +305,18 @@ export default function PaymentsPage() {
                       step="any"
                       value={amount}
                       onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="form-input"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      পদ্ধতি
+                    <label className="form-label">
+                      Method
                     </label>
                     <select
                       value={method}
-                      onChange={(e) => setMethod(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      onChange={(e) => setMethod(e.target.value as typeof method)}
+                      className="form-select"
                     >
                       {PAYMENT_METHODS.map((m) => (
                         <option key={m.value} value={m.value}>
@@ -386,34 +328,34 @@ export default function PaymentsPage() {
                 </div>
 
                 {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                    নোট
+                <div className="form-group">
+                  <label className="form-label">
+                    Notes
                   </label>
                   <textarea
                     value={paymentNotes}
                     onChange={(e) => setPaymentNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)] resize-none"
-                    placeholder="অতিরিক্ত তথ্য (ঐচ্ছিক)"
+                    className="form-textarea"
+                    placeholder="Additional information (optional)"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="form-actions">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] rounded-lg transition-colors"
+                    className="btn btn-secondary"
                   >
-                    বাতিল
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                    className="btn btn-primary"
                   >
-                    {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    পেমেন্ট যোগ করুন
+                    {isSubmitting && <Loader2 className="animate-spin" />}
+                    Add Payment
                   </button>
                 </div>
               </form>

@@ -23,20 +23,11 @@ import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { customerSchema, type CustomerInput } from "@/lib/validators";
 import { fetcher } from "@/lib/fetcher";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/use-debounce";
 import Link from "next/link";
-
-
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  notes: string;
-  createdAt: string;
-}
+import type { Customer } from "@/types";
 
 function CustomersContent() {
   const router = useRouter();
@@ -96,47 +87,31 @@ function CustomersContent() {
   async function onSubmit(formData: CustomerInput) {
     setIsSubmitting(true);
     try {
-      const url = editingCustomer
-        ? `/api/customers/${editingCustomer.id}`
-        : "/api/customers";
-      const method = editingCustomer ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "গ্রাহক সংরক্ষণ ব্যর্থ");
+      if (editingCustomer) {
+        await api.updateCustomer(editingCustomer.id, formData);
+        toast.success("Customer updated successfully");
+      } else {
+        await api.createCustomer(formData);
+        toast.success("Customer added successfully");
       }
-
-      toast.success(
-        editingCustomer ? "গ্রাহক আপডেট হয়েছে" : "নতুন গ্রাহক যোগ হয়েছে"
-      );
       mutate(apiUrl);
       closeModal();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "কিছু সমস্যা হয়েছে";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Operation failed");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDelete(customer: Customer) {
-    if (!confirm(`"${customer.name}" মুছে ফেলতে চান?`)) return;
+    if (!confirm("Are you sure you want to delete this customer?")) return;
     setDeletingId(customer.id);
     try {
-      const res = await fetch(`/api/customers/${customer.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("মুছে ফেলা ব্যর্থ");
-      toast.success("গ্রাহক মুছে ফেলা হয়েছে");
+      await api.deleteCustomer(customer.id);
+      toast.success("Customer deleted successfully");
       mutate(apiUrl);
     } catch {
-      toast.error("গ্রাহক মুছে ফেলা ব্যর্থ হয়েছে");
+      toast.error("Failed to delete customer");
     } finally {
       setDeletingId(null);
     }
@@ -144,48 +119,48 @@ function CustomersContent() {
 
   return (
     <PageShell>
-      <PageHeader title="গ্রাহক ব্যবস্থাপনা" subtitle="সকল গ্রাহকের তালিকা ও ব্যবস্থাপনা">
+      <PageHeader title="Customer Management" subtitle="Manage all customers">
         <button
           onClick={openAddModal}
-          className="btn-primary"
+          className="btn btn-primary"
         >
-          <Plus className="w-4 h-4" />
-          নতুন গ্রাহক
+          <Plus />
+          New Customer
         </button>
       </PageHeader>
 
       {/* Search */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+      <div className="search-box">
+        <div className="search-box-inner">
+          <Search className="search-box-icon" />
           <input
             type="text"
-            placeholder="নাম, ফোন বা ইমেইল দিয়ে খুঁজুন..."
+            placeholder="Search customers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="input-premium pl-10"
+            className="search-box-input"
           />
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl mb-6">
-          ডাটা লোড করতে সমস্যা হয়েছে।
+        <div className="alert alert-error">
+          Failed to load data.
         </div>
       )}
 
       {/* Table */}
-      <div className="dashboard-card overflow-hidden">
+      <div className="dashboard-card">
         {isLoading ? (
           <div className="p-6">
-            <div className="space-y-3">
+            <div className="skeleton-list">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="animate-pulse flex items-center gap-4">
-                  <div className="w-10 h-10 bg-[var(--bg-muted)] rounded-xl" />
-                  <div className="h-4 w-40 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-32 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-48 bg-[var(--bg-muted)] rounded" />
+                <div key={i} className="skeleton-row">
+                  <div className="skeleton-avatar" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line" />
+                  <div className="skeleton-line" />
                 </div>
               ))}
             </div>
@@ -193,22 +168,22 @@ function CustomersContent() {
         ) : !customers || customers.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">
-              <Users className="w-6 h-6 text-[var(--text-tertiary)]" />
+              <Users />
             </div>
-            <p className="empty-state-title">কোনো গ্রাহক পাওয়া যায়নি</p>
+            <p className="empty-state-title">No customers found</p>
             <p className="empty-state-description">
-              নতুন গ্রাহক যোগ করতে উপরের বাটনে ক্লিক করুন
+              Click the button above to add a new customer
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table-premium">
+          <div className="data-table-container">
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th>নাম</th>
-                  <th>ফোন</th>
-                  <th>ইমেইল</th>
-                  <th className="text-right">কার্যক্রম</th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,65 +195,63 @@ function CustomersContent() {
                     transition={{ delay: i * 0.03 }}
                   >
                     <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
-                          <span className="text-xs font-bold text-slate-900">
-                            {customer.name.charAt(0)}
-                          </span>
+                      <div className="customer-name">
+                        <div className="avatar">
+                          {customer.name.charAt(0)}
                         </div>
-                        <span className="font-medium text-[var(--text-primary)]">
+                        <span className="customer-name-text">
                           {customer.name}
                         </span>
                       </div>
                     </td>
                     <td>
                       {customer.phone ? (
-                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                          <Phone className="w-3.5 h-3.5" />
+                        <div className="customer-phone">
+                          <Phone />
                           <span>{customer.phone}</span>
                         </div>
                       ) : (
-                        <span className="text-[var(--text-tertiary)]">--</span>
+                        <span className="text-tertiary">--</span>
                       )}
                     </td>
                     <td>
                       {customer.email ? (
-                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                          <Mail className="w-3.5 h-3.5" />
-                          <span className="truncate max-w-[200px]">
+                        <div className="customer-email">
+                          <Mail />
+                          <span className="truncate max-w-200">
                             {customer.email}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[var(--text-tertiary)]">--</span>
+                        <span className="text-tertiary">--</span>
                       )}
                     </td>
                     <td>
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="customer-actions">
                         <Link
                           href={`/customers/${customer.id}`}
-                          className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-blue-600 transition-all duration-200"
-                          title="বিস্তারিত"
+                          className="action-btn view"
+                          title="View"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye />
                         </Link>
                         <button
                           onClick={() => openEditModal(customer)}
-                          className="p-2 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-amber-600 transition-all duration-200"
-                          title="সম্পাদনা"
+                          className="action-btn edit"
+                          title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil />
                         </button>
                         <button
                           onClick={() => handleDelete(customer)}
                           disabled={deletingId === customer.id}
-                          className="p-2 rounded-lg hover:bg-rose-50 text-[var(--text-secondary)] hover:text-rose-600 transition-all duration-200 disabled:opacity-50"
-                          title="মুছুন"
+                          className="action-btn delete"
+                          title="Delete"
                         >
                           {deletingId === customer.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="animate-spin" />
                           ) : (
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 />
                           )}
                         </button>
                       </div>
@@ -312,16 +285,16 @@ function CustomersContent() {
             >
               <div className="modal-header">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                    <Sparkles className="w-4 h-4 text-slate-900" />
+                  <div className="modal-icon indigo">
+                    <Sparkles />
                   </div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    {editingCustomer ? "গ্রাহক সম্পাদনা" : "নতুন গ্রাহক যোগ করুন"}
+                  <h2 className="text-lg font-semibold text-primary">
+                    {editingCustomer ? "Edit Customer" : "Add New Customer"}
                   </h2>
                 </div>
                 <button
                   onClick={closeModal}
-                  className="p-1.5 rounded-lg hover:bg-[var(--bg-muted)] text-[var(--text-tertiary)] transition-colors"
+                  className="action-btn"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -329,33 +302,33 @@ function CustomersContent() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="modal-body space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                    নাম *
+                  <label className="form-label">
+                    Name *
                   </label>
                   <input
                     {...register("name")}
                     className="input-premium"
-                    placeholder="গ্রাহকের নাম"
+                    placeholder="Customer name"
                   />
                   {errors.name && (
-                    <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>
+                    <p className="text-xs text-error mt-1">{errors.name.message}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                      ফোন
+                    <label className="form-label">
+                      Phone
                     </label>
                     <input
                       {...register("phone")}
                       className="input-premium"
-                      placeholder="০১XXXXXXXXX"
+                      placeholder="01XXXXXXXXX"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                      ইমেইল
+                    <label className="form-label">
+                      Email
                     </label>
                     <input
                       {...register("email")}
@@ -364,7 +337,7 @@ function CustomersContent() {
                       placeholder="email@example.com"
                     />
                     {errors.email && (
-                      <p className="text-xs text-rose-500 mt-1">
+                      <p className="text-xs text-error mt-1">
                         {errors.email.message}
                       </p>
                     )}
@@ -372,25 +345,25 @@ function CustomersContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                    ঠিকানা
+                  <label className="form-label">
+                    Address
                   </label>
                   <input
                     {...register("address")}
                     className="input-premium"
-                    placeholder="ঠিকানা (ঐচ্ছিক)"
+                    placeholder="Address (optional)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                    নোট
+                  <label className="form-label">
+                    Notes
                   </label>
                   <textarea
                     {...register("notes")}
                     rows={2}
                     className="input-premium resize-none"
-                    placeholder="অতিরিক্ত তথ্য (ঐচ্ছিক)"
+                    placeholder="Additional notes (optional)"
                   />
                 </div>
 
@@ -400,7 +373,7 @@ function CustomersContent() {
                     onClick={closeModal}
                     className="btn-ghost"
                   >
-                    বাতিল
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -408,7 +381,7 @@ function CustomersContent() {
                     className="btn-primary"
                   >
                     {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {editingCustomer ? "আপডেট করুন" : "যোগ করুন"}
+                    {editingCustomer ? "Update" : "Save"}
                   </button>
                 </div>
               </form>

@@ -2,61 +2,61 @@ import { LayoutDashboard, Users, Briefcase, ClipboardList, CreditCard, BarChart3
 
 export const NAV_ITEMS = [
   {
-    group: "প্রধান",
+    group: "Main",
     items: [
-      { href: "/", label: "Dashboard", labelBn: "ড্যাশবোর্ড", icon: LayoutDashboard },
+      { href: "/", label: "Dashboard", icon: LayoutDashboard },
     ],
   },
   {
-    group: "ব্যবস্থাপনা",
+    group: "Management",
     items: [
-      { href: "/customers", label: "Customers", labelBn: "গ্রাহক", icon: Users },
-      { href: "/services", label: "Services", labelBn: "সেবা", icon: Briefcase },
-      { href: "/assignments", label: "Assignments", labelBn: "বরাদ্দ", icon: ClipboardList },
-      { href: "/payments", label: "Payments", labelBn: "পেমেন্ট", icon: CreditCard },
+      { href: "/customers", label: "Customers", icon: Users },
+      { href: "/services", label: "Services", icon: Briefcase },
+      { href: "/assignments", label: "Assignments", icon: ClipboardList },
+      { href: "/payments", label: "Payments", icon: CreditCard },
     ],
   },
   {
-    group: "রিপোর্ট",
+    group: "Reports",
     items: [
-      { href: "/reports", label: "Reports", labelBn: "রিপোর্ট", icon: BarChart3 },
-      { href: "/activity", label: "Activity", labelBn: "কার্যকলাপ", icon: Activity },
+      { href: "/reports", label: "Reports", icon: BarChart3 },
+      { href: "/activity", label: "Activity", icon: Activity },
     ],
   },
   {
-    group: "সিস্টেম",
+    group: "System",
     items: [
-      { href: "/settings", label: "Settings", labelBn: "সেটিংস", icon: Settings },
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ] as const;
 
 export const QUICK_ACTIONS = [
-  { href: "/assignments/new", label: "নতুন বরাদ্দ", icon: PlusCircle, color: "text-indigo-500" },
-  { href: "/customers?new=true", label: "নতুন গ্রাহক", icon: Users, color: "text-emerald-500" },
-  { href: "/services?new=true", label: "নতুন সেবা", icon: Briefcase, color: "text-amber-500" },
+  { href: "/assignments/new", label: "New Assignment", icon: PlusCircle, color: "text-indigo-500" },
+  { href: "/customers?new=true", label: "New Customer", icon: Users, color: "text-emerald-500" },
+  { href: "/services?new=true", label: "New Service", icon: Briefcase, color: "text-violet-500" },
 ] as const;
 
 export const SERVICE_CATEGORIES = [
-  "সাধারণ",
-  "সরকারি সেবা",
-  "অনলাইন আবেদন",
-  "প্রিন্ট ও স্ক্যান",
-  "ছবি ও মিডিয়া",
-  "শিক্ষা",
-  "অন্যান্য",
+  "General",
+  "Government Services",
+  "Online Applications",
+  "Print & Scan",
+  "Photo & Media",
+  "Education",
+  "Other",
 ] as const;
 
 export const PAYMENT_METHODS = [
-  { value: "cash", label: "নগদ" },
-  { value: "bkash", label: "বিকাশ" },
-  { value: "nagad", label: "নগদ (Nagad)" },
-  { value: "bank", label: "ব্যাংক" },
-  { value: "other", label: "অন্যান্য" },
+  { value: "cash", label: "Cash" },
+  { value: "bkash", label: "bKash" },
+  { value: "nagad", label: "Nagad" },
+  { value: "bank", label: "Bank" },
+  { value: "other", label: "Other" },
 ] as const;
 
 export const ASSIGNMENT_STATUSES = [
-  { value: "active", label: "সক্রিয়", color: "bg-blue-100 text-blue-700" },
-  { value: "completed", label: "সম্পন্ন", color: "bg-emerald-100 text-emerald-700" },
-  { value: "cancelled", label: "বাতিল", color: "bg-red-100 text-red-700" },
+  { value: "active", label: "Active", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  { value: "completed", label: "Completed", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" },
+  { value: "cancelled", label: "Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
 ] as const;

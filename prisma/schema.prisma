@@ -16,7 +16,8 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  activityLogs ActivityLog[]
+  activityLogs   ActivityLog[]
+  notifications  Notification[]
 }
 
 model Customer {
@@ -93,5 +94,24 @@ model ActivityLog {
   user User? @relation(fields: [userId], references: [id])
 
   @@index([entityType])
+  @@index([createdAt])
+}
+
+model Notification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  message    String
+  type       String   @default("info")
+  read       Boolean  @default(false)
+  entityType String   @default("")
+  entityId   String   @default("")
+  href       String   @default("")
+  userId     String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([read])
   @@index([createdAt])
 }

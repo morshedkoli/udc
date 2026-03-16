@@ -20,19 +20,37 @@ export async function GET(request: Request) {
       return NextResponse.json([]);
     }
 
-    const results: SearchResult[] = [];
+    // Run all searches in parallel for better performance
+    const [customers, services, assignments] = await Promise.all([
+      prisma.customer.findMany({
+        where: {
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { phone: { contains: q, mode: "insensitive" } },
+            { email: { contains: q, mode: "insensitive" } },
+          ],
+        },
+        take: 10,
+      }),
+      prisma.service.findMany({
+        where: {
+          name: { contains: q, mode: "insensitive" },
+        },
+        take: 10,
+      }),
+      prisma.serviceAssignment.findMany({
+        where: {
+          OR: [
+            { customer: { name: { contains: q, mode: "insensitive" } } },
+            { service: { name: { contains: q, mode: "insensitive" } } },
+          ],
+        },
+        include: { customer: true, service: true },
+        take: 10,
+      }),
+    ]);
 
-    // Search customers (name, phone, email)
-    const customers = await prisma.customer.findMany({
-      where: {
-        OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          { phone: { contains: q, mode: "insensitive" } },
-          { email: { contains: q, mode: "insensitive" } },
-        ],
-      },
-      take: 10,
-    });
+    const results: SearchResult[] = [];
 
     for (const customer of customers) {
       results.push({
@@ -44,14 +62,6 @@ export async function GET(request: Request) {
       });
     }
 
-    // Search services (name)
-    const services = await prisma.service.findMany({
-      where: {
-        name: { contains: q, mode: "insensitive" },
-      },
-      take: 10,
-    });
-
     for (const service of services) {
       results.push({
         type: "service",
@@ -61,21 +71,6 @@ export async function GET(request: Request) {
         href: `/services`,
       });
     }
-
-    // Search assignments (by customer name or service name)
-    const assignments = await prisma.serviceAssignment.findMany({
-      where: {
-        OR: [
-          { customer: { name: { contains: q, mode: "insensitive" } } },
-          { service: { name: { contains: q, mode: "insensitive" } } },
-        ],
-      },
-      include: {
-        customer: true,
-        service: true,
-      },
-      take: 10,
-    });
 
     for (const assignment of assignments) {
       results.push({

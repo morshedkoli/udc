@@ -5,12 +5,11 @@ import { Sun, Moon, Monitor, Info } from "lucide-react";
 import { useTheme } from "next-themes";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
-  { value: "light", label: "লাইট", icon: Sun },
-  { value: "dark", label: "ডার্ক", icon: Moon },
-  { value: "system", label: "সিস্টেম", icon: Monitor },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: Monitor },
 ] as const;
 
 export default function SettingsPage() {
@@ -18,7 +17,7 @@ export default function SettingsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="সেটিংস" subtitle="অ্যাপ্লিকেশন সেটিংস ও কনফিগারেশন" />
+      <PageHeader title="Settings" subtitle="Application settings and configuration" />
 
       <div className="max-w-2xl space-y-6">
         {/* Theme Section */}
@@ -26,18 +25,18 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6"
+          className="settings-card"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
-              <Sun className="w-5 h-5 text-indigo-500" />
+            <div className="settings-icon">
+              <Sun />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                থিম
+              <h2 className="text-base font-semibold text-primary">
+                Theme
               </h2>
-              <p className="text-xs text-[var(--text-tertiary)]">
-                অ্যাপ্লিকেশনের রঙের থিম পরিবর্তন করুন
+              <p className="text-xs text-tertiary">
+                Change the application color theme
               </p>
             </div>
           </div>
@@ -50,28 +49,13 @@ export default function SettingsPage() {
                 <button
                   key={option.value}
                   onClick={() => setTheme(option.value)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all",
-                    isActive
-                      ? "border-[var(--brand-primary)] bg-[var(--brand-primary-light)]"
-                      : "border-[var(--border-subtle)] bg-[var(--bg-muted)] hover:border-[var(--border-default)]"
-                  )}
+                  className={`theme-option ${isActive ? 'active' : ''}`}
                 >
                   <Icon
-                    className={cn(
-                      "w-6 h-6",
-                      isActive
-                        ? "text-[var(--brand-primary)]"
-                        : "text-[var(--text-secondary)]"
-                    )}
+                    className={`w-6 h-6 ${isActive ? 'text-brand-primary' : 'text-secondary'}`}
                   />
                   <span
-                    className={cn(
-                      "text-sm font-medium",
-                      isActive
-                        ? "text-[var(--brand-primary)]"
-                        : "text-[var(--text-secondary)]"
-                    )}
+                    className={`text-sm font-medium ${isActive ? 'text-brand-primary' : 'text-secondary'}`}
                   >
                     {option.label}
                   </span>
@@ -86,52 +70,52 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6"
+          className="settings-card"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <Info className="w-5 h-5 text-emerald-500" />
+            <div className="settings-icon success">
+              <Info />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">
-                সম্পর্কে
+              <h2 className="text-base font-semibold text-primary">
+                About
               </h2>
-              <p className="text-xs text-[var(--text-tertiary)]">
-                অ্যাপ্লিকেশনের তথ্য
+              <p className="text-xs text-tertiary">
+                Application information
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-[var(--border-subtle)]">
-              <span className="text-sm text-[var(--text-secondary)]">
-                অ্যাপ্লিকেশন
+            <div className="flex items-center justify-between py-2 border-b border-subtle">
+              <span className="text-sm text-secondary">
+                Application
               </span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
-                কালিকচ্ছ UDC Dashboard
+              <span className="text-sm font-medium text-primary">
+                Kalikachha UDC Dashboard
               </span>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-[var(--border-subtle)]">
-              <span className="text-sm text-[var(--text-secondary)]">
-                সংস্করণ
+            <div className="flex items-center justify-between py-2 border-b border-subtle">
+              <span className="text-sm text-secondary">
+                Version
               </span>
-              <span className="text-sm font-mono font-medium text-[var(--text-primary)]">
+              <span className="text-sm font-mono font-medium text-primary">
                 4.0.0
               </span>
             </div>
-            <div className="flex items-center justify-between py-2 border-b border-[var(--border-subtle)]">
-              <span className="text-sm text-[var(--text-secondary)]">
-                প্ল্যাটফর্ম
+            <div className="flex items-center justify-between py-2 border-b border-subtle">
+              <span className="text-sm text-secondary">
+                Platform
               </span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
+              <span className="text-sm font-medium text-primary">
                 Next.js + Prisma + MongoDB
               </span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-sm text-[var(--text-secondary)]">
-                ডেভেলপার
+              <span className="text-sm text-secondary">
+                Developer
               </span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
+              <span className="text-sm font-medium text-primary">
                 UDC Service Team
               </span>
             </div>

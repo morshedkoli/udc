@@ -65,7 +65,7 @@ export async function PUT(
     });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     await logActivity("updated", "service", service.id, `Service "${service.name}" updated`, userId);
 
@@ -97,7 +97,7 @@ export async function DELETE(
     await prisma.service.delete({ where: { id } });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     await logActivity("deleted", "service", id, `Service "${existing.name}" deleted`, userId);
 

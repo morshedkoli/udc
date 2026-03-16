@@ -18,45 +18,10 @@ import {
   FileText,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { formatCurrency, formatBanglaDate } from "@/lib/formatters";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { ASSIGNMENT_STATUSES, PAYMENT_METHODS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 import { fetcher } from "@/lib/fetcher";
-
-interface Payment {
-  id: string;
-  amount: number;
-  paymentDate: string;
-  method: string;
-  notes: string;
-}
-
-interface Assignment {
-  id: string;
-  customPrice: number;
-  assignedDate: string;
-  status: string;
-  notes: string;
-  service: {
-    id: string;
-    name: string;
-    category: string;
-  };
-  payments: Payment[];
-}
-
-interface CustomerDetail {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  notes: string;
-  createdAt: string;
-  assignments: Assignment[];
-  assignmentsCount: number;
-  totalPayments: number;
-}
+import type { CustomerDetail, Payment } from "@/types";
 
 export default function CustomerProfilePage() {
   const params = useParams();
@@ -92,7 +57,7 @@ export default function CustomerProfilePage() {
 
   function getStatusBadge(status: string) {
     const found = ASSIGNMENT_STATUSES.find((s) => s.value === status);
-    return found || { label: status, color: "bg-gray-100 text-gray-600" };
+    return found || { label: status, color: "bg-[var(--bg-muted)] text-[var(--text-secondary)]" };
   }
 
   function getMethodLabel(method: string) {
@@ -108,7 +73,7 @@ export default function CustomerProfilePage() {
             <div className="w-6 h-6 bg-[var(--bg-muted)] rounded" />
             <div className="h-7 w-48 bg-[var(--bg-muted)] rounded" />
           </div>
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6 mb-6">
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-16 h-16 bg-[var(--bg-muted)] rounded-full" />
               <div>
@@ -139,14 +104,14 @@ export default function CustomerProfilePage() {
         <div className="text-center py-20">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
           <p className="text-[var(--text-secondary)]">
-            গ্রাহকের তথ্য লোড করা যায়নি
+            Failed to load customer details
           </p>
           <Link
             href="/customers"
             className="inline-flex items-center gap-2 mt-4 text-sm text-[var(--brand-primary)] hover:underline"
           >
             <ArrowLeft className="w-4 h-4" />
-            গ্রাহক তালিকায় ফিরুন
+            Back to customers
           </Link>
         </div>
       </PageShell>
@@ -161,14 +126,14 @@ export default function CustomerProfilePage() {
         className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
-        গ্রাহক তালিকা
+        Customer List
       </Link>
 
       {/* Customer Info Card */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6 mb-6"
+        className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl p-6 mb-6"
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0">
@@ -221,7 +186,7 @@ export default function CustomerProfilePage() {
               <ClipboardList className="w-4 h-4 text-blue-500" />
             </div>
             <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-              মোট বরাদ্দ
+              Total Assignments
             </span>
           </div>
           <p className="amount-text text-xl text-[var(--text-primary)]">
@@ -240,7 +205,7 @@ export default function CustomerProfilePage() {
               <Wallet className="w-4 h-4 text-emerald-500" />
             </div>
             <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-              মোট পরিশোধ
+              Total Paid
             </span>
           </div>
           <p className="amount-text text-xl text-[var(--text-primary)]">
@@ -259,62 +224,53 @@ export default function CustomerProfilePage() {
               <AlertCircle className="w-4 h-4 text-red-500" />
             </div>
             <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-              বকেয়া
+              Pending
             </span>
           </div>
-          <p
-            className={cn(
-              "amount-text text-xl",
-              pendingAmount > 0
-                ? "text-red-600"
-                : "text-[var(--text-primary)]"
-            )}
-          >
+          <p className={`amount-text text-xl ${pendingAmount > 0 ? "text-error" : "text-primary"}`}>
             {formatCurrency(Math.max(0, pendingAmount))}
           </p>
         </motion.div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-[var(--bg-muted)] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-4 bg-muted rounded-lg p-1 w-fit">
         <button
           onClick={() => setActiveTab("assignments")}
-          className={cn(
-            "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
             activeTab === "assignments"
-              ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm"
-              : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          )}
+              ? "bg-surface text-primary shadow-sm"
+              : "text-secondary hover:text-primary"
+          }`}
         >
           <span className="flex items-center gap-1.5">
             <ClipboardList className="w-3.5 h-3.5" />
-            বরাদ্দ ({customer.assignments.length})
+            Assignments ({customer.assignments.length})
           </span>
         </button>
         <button
           onClick={() => setActiveTab("payments")}
-          className={cn(
-            "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
+          className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
             activeTab === "payments"
-              ? "bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm"
-              : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          )}
+              ? "bg-surface text-primary shadow-sm"
+              : "text-secondary hover:text-primary"
+          }`}
         >
           <span className="flex items-center gap-1.5">
             <CreditCard className="w-3.5 h-3.5" />
-            পেমেন্ট ({allPayments.length})
+            Payments ({allPayments.length})
           </span>
         </button>
       </div>
 
       {/* Tab Content */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] overflow-hidden">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
         {activeTab === "assignments" ? (
           customer.assignments.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardList className="w-10 h-10 text-[var(--text-tertiary)] mx-auto mb-2" />
               <p className="text-sm text-[var(--text-secondary)]">
-                কোনো বরাদ্দ নেই
+                No assignments found
               </p>
             </div>
           ) : (
@@ -323,19 +279,19 @@ export default function CustomerProfilePage() {
                 <thead className="bg-[var(--bg-muted)]">
                   <tr>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                      তারিখ
+                      Date
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                      সেবা
+                      Service
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                      মূল্য
+                      Price
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                      পরিশোধ
+                      Paid
                     </th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                      স্ট্যাটাস
+                      Status
                     </th>
                   </tr>
                 </thead>
@@ -352,7 +308,7 @@ export default function CustomerProfilePage() {
                         className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                       >
                         <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                          {formatBanglaDate(assignment.assignedDate)}
+                          {formatDate(assignment.assignedDate)}
                         </td>
                         <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
                           <span className="font-medium text-[var(--text-primary)]">
@@ -369,13 +325,8 @@ export default function CustomerProfilePage() {
                             {formatCurrency(paid)}
                           </span>
                         </td>
-                        <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                          <span
-                            className={cn(
-                              "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full",
-                              badge.color
-                            )}
-                          >
+                        <td className="px-4 py-3 border-t border-subtle">
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${badge.color}`}>
                             {badge.label}
                           </span>
                         </td>
@@ -390,7 +341,7 @@ export default function CustomerProfilePage() {
           <div className="text-center py-12">
             <CreditCard className="w-10 h-10 text-[var(--text-tertiary)] mx-auto mb-2" />
             <p className="text-sm text-[var(--text-secondary)]">
-              কোনো পেমেন্ট নেই
+              No payments found
             </p>
           </div>
         ) : (
@@ -399,16 +350,16 @@ export default function CustomerProfilePage() {
               <thead className="bg-[var(--bg-muted)]">
                 <tr>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    তারিখ
+                    Date
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    সেবা
+                    Service
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    পরিমাণ
+                    Amount
                   </th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    পদ্ধতি
+                    Method
                   </th>
                 </tr>
               </thead>
@@ -419,7 +370,7 @@ export default function CustomerProfilePage() {
                     className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                   >
                     <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                      {formatBanglaDate(payment.paymentDate)}
+                      {formatDate(payment.paymentDate)}
                     </td>
                     <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
                       <span className="text-[var(--text-primary)]">

@@ -4,7 +4,7 @@ import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Mail, Eye, EyeOff, Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, Loader2, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -16,27 +16,37 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
+  const doLogin = async (loginEmail: string, loginPassword: string) => {
     setLoading(true);
     setError("");
     const result = await signIn("credentials", {
-      email,
-      password,
+      email: loginEmail,
+      password: loginPassword,
       redirect: false,
     });
     if (result?.error) {
-      setError("ভুল ইমেইল বা পাসওয়ার্ড");
+      setError("Invalid email or password");
       setLoading(false);
     } else {
       window.location.href = callbackUrl;
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    await doLogin(email, password);
+  };
+
+  const handleAdminLogin = () => {
+    setEmail("admin@udc.gov.bd");
+    setPassword("admin1234");
+    doLogin("admin@udc.gov.bd", "admin1234");
+  };
+
   return (
     <div className="login-scene">
-      {/* ── Animated background ── */}
+      {/* Animated background */}
       <div className="login-scene-bg">
         <div className="login-orb login-orb--1" />
         <div className="login-orb login-orb--2" />
@@ -58,7 +68,7 @@ function LoginForm() {
         <div className="login-noise" />
       </div>
 
-      {/* ── Card ── */}
+      {/* Card */}
       <motion.div
         initial={{ opacity: 0, y: 28, filter: "blur(10px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -66,20 +76,20 @@ function LoginForm() {
         className="login-card"
       >
         {/* Logo */}
-        <div className="flex flex-col items-center mb-2">
+        <div className="login-card-header">
           <motion.div
             initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
             animate={{ scale: 1, opacity: 1, rotate: 0 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 180, damping: 14 }}
             className="login-logo"
           >
-            <Sparkles className="w-7 h-7" />
+            <Sparkles className="login-logo-icon" />
           </motion.div>
-          <h1 className="text-2xl font-bold text-white mt-5 tracking-tight">
-            কালিকচ্ছ UDC
+          <h1 className="login-card-title">
+            Kalikachha UDC
           </h1>
-          <p className="text-[13px] text-white/40 mt-1.5">
-            সেবা ব্যবস্থাপনা ড্যাশবোর্ড
+          <p className="login-card-subtitle">
+            Service Management Dashboard
           </p>
         </div>
 
@@ -88,20 +98,20 @@ function LoginForm() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="flex justify-center mt-4"
+          className="login-card-badge"
         >
-          <span className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider bg-gradient-to-r from-amber-400/20 to-yellow-500/20 text-amber-400 rounded-full border border-amber-400/20">
+          <span className="login-badge">
             Premium Access
           </span>
         </motion.div>
 
         {/* Divider */}
         <div className="login-separator">
-          <span>অ্যাকাউন্টে প্রবেশ</span>
+          <span>Sign in to your account</span>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-3.5 mt-4">
+        <form onSubmit={handleSubmit} className="login-form">
           {/* Email */}
           <div className={`login-input-wrap ${focused === "email" ? "login-input-wrap--focus" : ""}`}>
             <Mail className="login-input-icon" />
@@ -111,7 +121,7 @@ function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               onFocus={() => setFocused("email")}
               onBlur={() => setFocused(null)}
-              placeholder="ইমেইল এড্রেস"
+              placeholder="Email address"
               required
               className="login-input"
             />
@@ -126,14 +136,14 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setFocused("password")}
               onBlur={() => setFocused(null)}
-              placeholder="পাসওয়ার্ড"
+              placeholder="Password"
               required
-              className="login-input pr-10"
+              className="login-input login-input-password"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+              className="login-input-toggle"
               tabIndex={-1}
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -148,7 +158,7 @@ function LoginForm() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
+                className="login-error-wrap"
               >
                 <div className="login-error">
                   <span className="login-error-dot" />
@@ -166,25 +176,37 @@ function LoginForm() {
             whileTap={{ scale: 0.98 }}
           >
             {loading ? (
-              <Loader2 className="w-[18px] h-[18px] animate-spin" />
+              <Loader2 className="login-spinner" />
             ) : (
               <>
-                প্রবেশ করুন
-                <ArrowRight className="w-4 h-4 ml-2 opacity-70" />
+                <span>Sign In</span>
+                <ArrowRight className="login-btn-arrow" />
               </>
             )}
+          </motion.button>
+
+          {/* Admin one-click login */}
+          <motion.button
+            type="button"
+            disabled={loading}
+            onClick={handleAdminLogin}
+            className="login-btn-admin"
+            whileTap={{ scale: 0.98 }}
+          >
+            <ShieldCheck className="login-btn-admin-icon" />
+            Admin Login
           </motion.button>
         </form>
 
         {/* Footer */}
         <p className="login-footer">
-          অ্যাক্সেস প্রয়োজন? প্রশাসকের সাথে যোগাযোগ করুন
+          Need access? Contact the administrator
         </p>
       </motion.div>
 
       {/* Copyright */}
-      <p className="absolute bottom-5 text-[10px] text-white/20">
-        &copy; {new Date().getFullYear()} কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার
+      <p className="login-copyright">
+        &copy; {new Date().getFullYear()} Kalikachha Union Digital Center
       </p>
     </div>
   );

@@ -16,21 +16,9 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { formatCurrency } from "@/lib/formatters";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { fetcher } from "@/lib/fetcher";
+import { api } from "@/lib/api-client";
 import { toast } from "sonner";
-
-interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  defaultPrice: number;
-  category: string;
-  status: string;
-}
+import type { Customer, Service } from "@/types";
 
 export default function NewAssignmentPage() {
   const router = useRouter();
@@ -82,15 +70,15 @@ export default function NewAssignmentPage() {
     e.preventDefault();
 
     if (!customerId) {
-      toast.error("গ্রাহক নির্বাচন করুন");
+      toast.error("Please select a customer");
       return;
     }
     if (!serviceId) {
-      toast.error("সেবা নির্বাচন করুন");
+      toast.error("Please select a service");
       return;
     }
     if (customPrice <= 0) {
-      toast.error("মূল্য সঠিকভাবে লিখুন");
+      toast.error("Please enter a valid price");
       return;
     }
 
@@ -98,51 +86,36 @@ export default function NewAssignmentPage() {
 
     try {
       // Step 1: Create assignment
-      const assignmentRes = await fetch("/api/assignments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerId,
-          serviceId,
-          customPrice,
-          assignedDate,
-          notes,
-          status: "active",
-        }),
+      const newAssignment = await api.createAssignment({
+        customerId,
+        serviceId,
+        customPrice,
+        assignedDate,
+        notes,
+        status: "active",
       });
-
-      if (!assignmentRes.ok) {
-        const err = await assignmentRes.json();
-        throw new Error(err.error || "সেবা বরাদ্দ তৈরি ব্যর্থ");
-      }
-
-      const newAssignment = await assignmentRes.json();
 
       // Step 2: Create payment if checked
       if (addPayment && paymentAmount > 0) {
-        const paymentRes = await fetch("/api/payments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        try {
+          await api.createPayment({
             assignmentId: newAssignment.id,
             amount: paymentAmount,
-            method: paymentMethod,
+            method: paymentMethod as "cash" | "bkash" | "nagad" | "bank" | "other",
             notes: "",
-          }),
-        });
-
-        if (!paymentRes.ok) {
+          });
+        } catch {
           // Assignment created but payment failed
-          toast.warning("বরাদ্দ তৈরি হয়েছে, কিন্তু পেমেন্ট যোগ করা যায়নি");
+          toast.warning("Assignment created, but payment could not be added");
           router.push("/assignments");
           return;
         }
       }
 
-      toast.success("সেবা বরাদ্দ সফল!");
+      toast.success("Assignment created successfully!");
       router.push("/assignments");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "কিছু সমস্যা হয়েছে";
+      const message = err instanceof Error ? err.message : "Something went wrong";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -157,38 +130,39 @@ export default function NewAssignmentPage() {
       {/* Back link */}
       <Link
         href="/assignments"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors mb-4"
+        className="back-link"
       >
-        <ArrowLeft className="w-4 h-4" />
-        বরাদ্দ তালিকা
+        <ArrowLeft />
+        Assignments
       </Link>
 
-      <PageHeader title="নতুন সেবা বরাদ্দ" subtitle="গ্রাহককে সেবা প্রদানের জন্য বরাদ্দ তৈরি করুন" />
+      <PageHeader title="New Assignment" subtitle="Create a new service assignment for a customer" />
 
       {isDataLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--brand-primary)]" />
-          <span className="ml-3 text-sm text-[var(--text-secondary)]">ডাটা লোড হচ্ছে...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-brand-primary" />
+          <span className="ml-3 text-sm text-secondary">Loading data...</span>
         </div>
       ) : (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] p-6 max-w-2xl"
+          className="settings-card"
+          style={{ maxWidth: '672px' }}
         >
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Customer Select */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                গ্রাহক *
+            <div className="form-group">
+              <label className="form-label">
+                Customer *
               </label>
               <select
                 value={customerId}
                 onChange={(e) => setCustomerId(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                className="form-select"
               >
-                <option value="">-- গ্রাহক নির্বাচন করুন --</option>
+                <option value="">-- Select a customer --</option>
                 {(customers || []).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} {c.phone ? `(${c.phone})` : ""}
@@ -198,16 +172,16 @@ export default function NewAssignmentPage() {
             </div>
 
             {/* Service Select */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                সেবা *
+            <div className="form-group">
+              <label className="form-label">
+                Service *
               </label>
               <select
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                className="form-select"
               >
-                <option value="">-- সেবা নির্বাচন করুন --</option>
+                <option value="">-- Select a service --</option>
                 {(services || []).map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name} ({s.category}) - {formatCurrency(s.defaultPrice)}
@@ -215,17 +189,17 @@ export default function NewAssignmentPage() {
                 ))}
               </select>
               {selectedService && (
-                <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                  ডিফল্ট মূল্য: {formatCurrency(selectedService.defaultPrice)}
+                <p className="text-xs text-tertiary mt-1">
+                  Default price: {formatCurrency(selectedService.defaultPrice)}
                 </p>
               )}
             </div>
 
             {/* Price & Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="form-row">
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  মূল্য &#2547; *
+                <label className="form-label">
+                  Price *
                 </label>
                 <input
                   type="number"
@@ -233,50 +207,50 @@ export default function NewAssignmentPage() {
                   step="any"
                   value={customPrice}
                   onChange={(e) => setCustomPrice(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                  className="form-input"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                  তারিখ
+                <label className="form-label">
+                  Date
                 </label>
                 <input
                   type="date"
                   value={assignedDate}
                   onChange={(e) => setAssignedDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                  className="form-input"
                 />
               </div>
             </div>
 
             {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                নোট
+            <div className="form-group">
+              <label className="form-label">
+                Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)] resize-none"
-                placeholder="অতিরিক্ত তথ্য (ঐচ্ছিক)"
+                className="form-textarea"
+                placeholder="Additional information (optional)"
               />
             </div>
 
             {/* Payment Toggle */}
-            <div className="border-t border-[var(--border-subtle)] pt-5">
-              <label className="flex items-center gap-3 cursor-pointer">
+            <div className="border-t border-subtle pt-5">
+              <label className="checkbox-wrapper">
                 <input
                   type="checkbox"
                   checked={addPayment}
                   onChange={(e) => setAddPayment(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--border-default)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+                  className="form-checkbox"
                 />
                 <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-[var(--text-tertiary)]" />
-                  <span className="text-sm font-medium text-[var(--text-primary)]">
-                    এই মুহূর্তে পেমেন্ট যোগ করুন
+                  <CreditCard className="w-4 h-4 text-tertiary" />
+                  <span className="text-sm font-medium text-primary">
+                    Add payment now
                   </span>
                 </div>
               </label>
@@ -289,12 +263,12 @@ export default function NewAssignmentPage() {
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-[var(--bg-muted)] rounded-lg p-4 space-y-4"
+                className="bg-muted rounded-lg p-4 space-y-4"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="form-row">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      পেমেন্ট পরিমাণ &#2547;
+                    <label className="form-label">
+                      Payment Amount
                     </label>
                     <input
                       type="number"
@@ -302,18 +276,18 @@ export default function NewAssignmentPage() {
                       step="any"
                       value={paymentAmount}
                       onChange={(e) => setPaymentAmount(parseFloat(e.target.value) || 0)}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="form-input"
                       placeholder="0"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      পদ্ধতি
+                    <label className="form-label">
+                      Method
                     </label>
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="form-select"
                     >
                       {PAYMENT_METHODS.map((m) => (
                         <option key={m.value} value={m.value}>
@@ -327,24 +301,24 @@ export default function NewAssignmentPage() {
             )}
 
             {/* Submit */}
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="form-actions">
               <Link
                 href="/assignments"
-                className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] rounded-lg transition-colors"
+                className="btn btn-secondary"
               >
-                বাতিল
+                Cancel
               </Link>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-5 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="btn btn-primary"
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <Save />
                 )}
-                বরাদ্দ তৈরি করুন
+                Create Assignment
               </button>
             </div>
           </form>

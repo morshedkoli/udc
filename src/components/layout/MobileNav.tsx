@@ -8,7 +8,6 @@ import { Menu, X, Sun, Moon, LogOut, ChevronRight, Sparkles } from "lucide-react
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NAV_ITEMS } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -23,38 +22,38 @@ export function MobileNav() {
 
   return (
     <>
-      {/* ── Sticky top bar ── */}
-      <div className="lg:hidden sticky top-0 z-50 h-14 px-4 flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/85 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
+      {/* Sticky top bar */}
+      <div className="mobile-nav-bar">
+        <div className="mobile-nav-left">
           <button
             onClick={() => setOpen(true)}
-            className="p-2 -ml-1 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] transition-colors"
+            className="mobile-nav-menu-btn"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="mobile-nav-menu-icon" />
           </button>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-slate-900 font-bold text-xs shadow-lg shadow-amber-500/20">
-            <Sparkles className="w-4 h-4" />
+          <div className="mobile-nav-logo">
+            <Sparkles className="mobile-nav-logo-icon" />
           </div>
-          <span className="text-sm font-bold text-[var(--text-primary)]">কালিকচ্ছ UDC</span>
+          <span className="mobile-nav-brand">Kalikachha UDC</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="mobile-nav-right">
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2 rounded-xl text-[var(--text-tertiary)] hover:bg-[var(--bg-muted)] transition-colors"
+            className="mobile-nav-theme-btn"
           >
             {mounted ? (
-              theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />
+              theme === "dark" ? <Sun className="mobile-nav-theme-icon" /> : <Moon className="mobile-nav-theme-icon" />
             ) : (
-              <Sun className="w-4 h-4 opacity-0" />
+              <Sun className="mobile-nav-theme-icon" style={{ opacity: 0 }} />
             )}
           </button>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 text-[10px] font-bold shadow-lg shadow-amber-500/20">
+          <div className="mobile-nav-user-avatar">
             {session?.user?.name?.charAt(0) || "A"}
           </div>
         </div>
       </div>
 
-      {/* ── Drawer ── */}
+      {/* Drawer */}
       <AnimatePresence>
         {open && (
           <>
@@ -64,42 +63,42 @@ export function MobileNav() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden"
+              className="mobile-nav-overlay"
             />
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
-              className="fixed left-0 top-0 bottom-0 w-[300px] z-50 bg-[var(--bg-surface)] flex flex-col lg:hidden shadow-2xl"
+              className="mobile-nav-drawer"
             >
               {/* Header */}
-              <div className="flex items-center justify-between h-[64px] px-5 border-b border-[var(--border-subtle)]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center text-slate-900 font-bold text-sm shadow-lg shadow-amber-500/20">
-                    <Sparkles className="w-5 h-5" />
+              <div className="mobile-nav-drawer-header">
+                <div className="mobile-nav-drawer-brand">
+                  <div className="mobile-nav-drawer-logo">
+                    <Sparkles className="mobile-nav-drawer-logo-icon" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[var(--text-primary)] leading-tight">কালিকচ্ছ UDC</p>
-                    <p className="text-[10px] text-[var(--text-tertiary)]">ডিজিটাল সেন্টার</p>
+                    <p className="mobile-nav-drawer-title">Kalikachha UDC</p>
+                    <p className="mobile-nav-drawer-subtitle">Digital Center</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="p-2 rounded-xl text-[var(--text-tertiary)] hover:bg-[var(--bg-muted)] transition-colors"
+                  className="mobile-nav-drawer-close"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="mobile-nav-drawer-close-icon" />
                 </button>
               </div>
 
               {/* Nav */}
-              <nav className="flex-1 overflow-y-auto py-4 px-3">
+              <nav className="mobile-nav-drawer-nav">
                 {NAV_ITEMS.map((group, gi) => (
-                  <div key={group.group} className={cn(gi > 0 && "mt-5")}>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-tertiary)] px-3 mb-2">
+                  <div key={group.group} className={gi > 0 ? "mobile-nav-drawer-group" : ""}>
+                    <p className="mobile-nav-drawer-group-label">
                       {group.group}
                     </p>
-                    <div className="space-y-0.5">
+                    <div className="mobile-nav-drawer-items">
                       {group.items.map((item) => {
                         const isActive =
                           pathname === item.href ||
@@ -110,29 +109,11 @@ export function MobileNav() {
                             key={item.href}
                             href={item.href}
                             onClick={() => setOpen(false)}
-                            className={cn(
-                              "flex items-center gap-3 px-3 py-3 rounded-xl text-[13px] font-medium transition-all duration-200",
-                              isActive
-                                ? "bg-gradient-to-r from-[var(--brand-primary)] to-[#2563eb] text-white shadow-lg shadow-blue-900/20"
-                                : "text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
-                            )}
+                            className={isActive ? "mobile-nav-drawer-item-active" : "mobile-nav-drawer-item"}
                           >
-                            <Icon
-                              className={cn(
-                                "w-[18px] h-[18px] shrink-0",
-                                isActive ? "text-white" : "text-[var(--text-tertiary)]"
-                              )}
-                            />
-                            <span className="flex-1">{item.label}</span>
-                            <span
-                              className={cn(
-                                "text-[10px]",
-                                isActive ? "text-white/50" : "text-[var(--text-tertiary)]"
-                              )}
-                            >
-                              {item.labelBn}
-                            </span>
-                            {isActive && <ChevronRight className="w-3.5 h-3.5 text-white/50" />}
+                            <Icon className={isActive ? "mobile-nav-drawer-item-icon-active" : "mobile-nav-drawer-item-icon"} />
+                            <span className="mobile-nav-drawer-item-text">{item.label}</span>
+                            {isActive && <ChevronRight className="mobile-nav-drawer-item-arrow" />}
                           </Link>
                         );
                       })}
@@ -142,24 +123,24 @@ export function MobileNav() {
               </nav>
 
               {/* User */}
-              <div className="border-t border-[var(--border-subtle)] p-4">
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-[var(--bg-muted)] to-transparent border border-[var(--border-subtle)]">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-900 text-sm font-bold shadow-lg shadow-amber-500/20 ring-2 ring-[var(--bg-surface)]">
+              <div className="mobile-nav-drawer-footer">
+                <div className="mobile-nav-drawer-user">
+                  <div className="mobile-nav-drawer-user-avatar">
                     {session?.user?.name?.charAt(0) || "A"}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text-primary)] truncate">
+                  <div className="mobile-nav-drawer-user-info">
+                    <p className="mobile-nav-drawer-user-name">
                       {session?.user?.name || "Admin"}
                     </p>
-                    <p className="text-[11px] text-[var(--text-tertiary)] truncate">
+                    <p className="mobile-nav-drawer-user-email">
                       {session?.user?.email || ""}
                     </p>
                   </div>
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="p-2 rounded-xl text-[var(--text-tertiary)] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-all duration-200"
+                    className="mobile-nav-drawer-logout"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="mobile-nav-drawer-logout-icon" />
                   </button>
                 </div>
               </div>

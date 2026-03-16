@@ -17,8 +17,8 @@ const notoSansBengali = Noto_Sans_Bengali({
 });
 
 export const metadata: Metadata = {
-  title: "কালিকচ্ছ UDC — Service Dashboard",
-  description: "কালিকচ্ছ ইউনিয়ন ডিজিটাল সেন্টার সেবা ব্যবস্থাপনা ড্যাশবোর্ড",
+  title: "Kalikachha UDC — Service Dashboard",
+  description: "Kalikachha Union Digital Center Service Management Dashboard",
   icons: {
     icon: "/favicon.svg",
   },
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${notoSansBengali.variable}`}>
         <Providers>{children}</Providers>
       </body>

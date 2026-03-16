@@ -13,21 +13,22 @@ export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
     <motion.div
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7"
+      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      className="page-header"
     >
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+      <div className="page-header-decor" />
+      <div className="page-header-content">
+        <h1 className="page-header-title">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
+          <p className="page-header-subtitle">
             {subtitle}
           </p>
         )}
       </div>
       {children && (
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="page-header-actions">
           {children}
         </div>
       )}

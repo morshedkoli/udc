@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     await logActivity("created", "service", service.id, `Service "${service.name}" created`, userId);
 

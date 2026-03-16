@@ -83,7 +83,7 @@ export async function PUT(
     });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     await logActivity("updated", "customer", customer.id, `Customer "${customer.name}" updated`, userId);
 
@@ -115,7 +115,7 @@ export async function DELETE(
     await prisma.customer.delete({ where: { id } });
 
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as { id?: string })?.id;
+    const userId = session?.user?.id;
 
     await logActivity("deleted", "customer", id, `Customer "${existing.name}" deleted`, userId);
 

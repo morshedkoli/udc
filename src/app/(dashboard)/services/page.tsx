@@ -20,20 +20,10 @@ import { serviceSchema, type ServiceInput } from "@/lib/validators";
 import { formatCurrency } from "@/lib/formatters";
 import { SERVICE_CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { fetcher } from "@/lib/fetcher";
 import { useDebounce } from "@/hooks/use-debounce";
-
-
-interface Service {
-  id: string;
-  name: string;
-  description: string;
-  defaultPrice: number;
-  category: string;
-  status: string;
-  createdAt: string;
-}
+import { api } from "@/lib/api-client";
+import type { Service } from "@/types";
 
 export default function ServicesPage() {
   const [search, setSearch] = useState("");
@@ -65,12 +55,12 @@ export default function ServicesPage() {
     formState: { errors },
   } = useForm<ServiceInput>({
     resolver: zodResolver(serviceSchema),
-    defaultValues: { name: "", description: "", defaultPrice: 0, category: "সাধারণ", status: "active" },
+    defaultValues: { name: "", description: "", defaultPrice: 0, category: "General", status: "active" },
   });
 
   function openAddModal() {
     setEditingService(null);
-    reset({ name: "", description: "", defaultPrice: 0, category: "সাধারণ", status: "active" });
+    reset({ name: "", description: "", defaultPrice: 0, category: "General", status: "active" });
     setShowModal(true);
   }
 
@@ -95,45 +85,31 @@ export default function ServicesPage() {
   async function onSubmit(formData: ServiceInput) {
     setIsSubmitting(true);
     try {
-      const url = editingService
-        ? `/api/services/${editingService.id}`
-        : "/api/services";
-      const method = editingService ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "সেবা সংরক্ষণ ব্যর্থ");
+      if (editingService) {
+        await api.updateService(editingService.id, formData);
+        toast.success("Service updated successfully");
+      } else {
+        await api.createService(formData);
+        toast.success("Service added successfully");
       }
-
-      toast.success(editingService ? "সেবা আপডেট হয়েছে" : "নতুন সেবা যোগ হয়েছে");
       mutate(apiUrl);
       closeModal();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "কিছু সমস্যা হয়েছে";
-      toast.error(message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Operation failed");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDelete(service: Service) {
-    if (!confirm(`"${service.name}" মুছে ফেলতে চান?`)) return;
+    if (!confirm(`Are you sure you want to delete "${service.name}"?`)) return;
     setDeletingId(service.id);
     try {
-      const res = await fetch(`/api/services/${service.id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("মুছে ফেলা ব্যর্থ");
-      toast.success("সেবা মুছে ফেলা হয়েছে");
+      await api.deleteService(service.id);
+      toast.success("Service deleted successfully");
       mutate(apiUrl);
-    } catch {
-      toast.error("সেবা মুছে ফেলা ব্যর্থ হয়েছে");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete service");
     } finally {
       setDeletingId(null);
     }
@@ -141,34 +117,34 @@ export default function ServicesPage() {
 
   return (
     <PageShell>
-      <PageHeader title="সেবা ক্যাটালগ" subtitle="সকল সেবার তালিকা ও ব্যবস্থাপনা">
+      <PageHeader title="Service Catalog" subtitle="Manage and view all services">
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors"
+          className="btn btn-primary"
         >
-          <Plus className="w-4 h-4" />
-          নতুন সেবা
+          <Plus />
+          New Service
         </button>
       </PageHeader>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
+      <div className="filters-row">
+        <div className="filter-search">
+          <Search className="search-icon" />
           <input
             type="text"
-            placeholder="সেবা খুঁজুন..."
+            placeholder="Search services..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+            className="form-input search-input-with-icon"
           />
         </div>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="px-4 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+          className="filter-select"
         >
-          <option value="">সকল ক্যাটাগরি</option>
+          <option value="">All Categories</option>
           {SERVICE_CATEGORIES.map((cat) => (
             <option key={cat} value={cat}>
               {cat}
@@ -179,56 +155,42 @@ export default function ServicesPage() {
 
       {/* Error State */}
       {error && (
-        <div className="bg-[var(--color-error-light)] border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          ডাটা লোড করতে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।
+        <div className="alert-error">
+          Failed to load data. Please try again.
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--radius-lg)] overflow-hidden">
+      <div className="table-container">
         {isLoading ? (
           <div className="p-8">
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="animate-pulse flex items-center gap-4">
-                  <div className="h-4 w-40 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-24 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-20 bg-[var(--bg-muted)] rounded" />
-                  <div className="h-4 w-16 bg-[var(--bg-muted)] rounded" />
+                <div key={i} className="skeleton-row">
+                  <div className="skeleton-line-lg" />
+                  <div className="skeleton-line-md" />
+                  <div className="skeleton-line-sm" />
+                  <div className="skeleton-line-sm" />
                 </div>
               ))}
             </div>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="text-center py-16">
-            <PackageOpen className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--text-secondary)] mb-1">
-              কোনো সেবা পাওয়া যায়নি
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              নতুন সেবা যোগ করতে উপরের বাটনে ক্লিক করুন
-            </p>
+          <div className="empty-state-small">
+            <PackageOpen />
+            <p>No services found</p>
+            <span>Click the button above to add a new service</span>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--bg-muted)]">
+          <div className="table-overflow">
+            <table className="table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    নাম
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    ক্যাটাগরি
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    মূল্য
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    স্ট্যাটাস
-                  </th>
-                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
-                    কার্যক্রম
-                  </th>
+                  <th>Service Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th className="table-header-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -238,61 +200,59 @@ export default function ServicesPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
-                    className="hover:bg-[var(--bg-surface-hover)] transition-colors"
                   >
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                    <td>
                       <div>
-                        <p className="font-medium text-[var(--text-primary)]">
+                        <p className="service-name">
                           {service.name}
                         </p>
                         {service.description && (
-                          <p className="text-xs text-[var(--text-tertiary)] mt-0.5 truncate max-w-xs">
+                          <p className="service-description">
                             {service.description}
                           </p>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                      <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-[var(--bg-muted)] text-[var(--text-secondary)]">
+                    <td>
+                      <span className="category-badge">
                         {service.category}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
-                      <span className="amount-text text-[var(--text-primary)]">
+                    <td>
+                      <span className="service-price">
                         {formatCurrency(service.defaultPrice)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)]">
+                    <td>
                       <span
-                        className={cn(
-                          "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full",
+                        className={`status-badge ${
                           service.status === "active"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-gray-100 text-gray-600"
-                        )}
+                            ? "status-active"
+                            : "status-inactive"
+                        }`}
                       >
-                        {service.status === "active" ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                        {service.status === "active" ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 border-t border-[var(--border-subtle)] text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td>
+                      <div className="customer-actions">
                         <button
                           onClick={() => openEditModal(service)}
-                          className="p-1.5 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:text-[var(--brand-primary)] transition-colors"
-                          title="সম্পাদনা"
+                          className="action-btn edit"
+                          title="Edit"
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil />
                         </button>
                         <button
                           onClick={() => handleDelete(service)}
                           disabled={deletingId === service.id}
-                          className="p-1.5 rounded-md hover:bg-red-50 text-[var(--text-secondary)] hover:text-red-600 transition-colors disabled:opacity-50"
-                          title="মুছুন"
+                          className="action-btn delete"
+                          title="Delete"
                         >
                           {deletingId === service.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <Loader2 className="animate-spin" />
                           ) : (
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 />
                           )}
                         </button>
                       </div>
@@ -312,84 +272,84 @@ export default function ServicesPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="modal-overlay-full"
           >
             <div
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              className="modal-backdrop-full"
               onClick={closeModal}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-[var(--bg-surface)] rounded-[var(--radius-xl)] shadow-xl border border-[var(--border-subtle)] p-6"
+              className="modal-content-full"
             >
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  {editingService ? "সেবা সম্পাদনা" : "নতুন সেবা যোগ করুন"}
+                <h2 className="text-lg font-semibold text-primary">
+                  {editingService ? "Edit Service" : "Add New Service"}
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="p-1 rounded-md hover:bg-[var(--bg-muted)] text-[var(--text-tertiary)]"
+                  className="action-btn"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                    সেবার নাম *
+                <div className="form-group">
+                  <label className="form-label form-label-required">
+                    Service Name
                   </label>
                   <input
                     {...register("name")}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
-                    placeholder="সেবার নাম লিখুন"
+                    className="form-input"
+                    placeholder="Enter service name"
                   />
                   {errors.name && (
-                    <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+                    <p className="form-error">{errors.name.message}</p>
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                    বিবরণ
+                <div className="form-group">
+                  <label className="form-label">
+                    Description
                   </label>
                   <textarea
                     {...register("description")}
                     rows={2}
-                    className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)] resize-none"
-                    placeholder="সেবার বিবরণ (ঐচ্ছিক)"
+                    className="form-textarea"
+                    placeholder="Service description (optional)"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="form-row">
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      মূল্য (৳) *
+                    <label className="form-label form-label-required">
+                      Default Price
                     </label>
                     <input
                       {...register("defaultPrice", { valueAsNumber: true })}
                       type="number"
                       min="0"
                       step="any"
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="form-input"
                       placeholder="0"
                     />
                     {errors.defaultPrice && (
-                      <p className="text-xs text-red-500 mt-1">
+                      <p className="form-error">
                         {errors.defaultPrice.message}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
-                      ক্যাটাগরি
+                    <label className="form-label">
+                      Category
                     </label>
                     <select
                       {...register("category")}
-                      className="w-full px-3 py-2 text-sm bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] text-[var(--text-primary)]"
+                      className="form-select"
                     >
                       {SERVICE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -401,7 +361,7 @@ export default function ServicesPage() {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="checkbox-wrapper">
                     <input
                       type="checkbox"
                       {...register("status", {
@@ -410,29 +370,29 @@ export default function ServicesPage() {
                       defaultChecked={
                         editingService ? editingService.status === "active" : true
                       }
-                      className="w-4 h-4 rounded border-[var(--border-default)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+                      className="form-checkbox"
                     />
-                    <span className="text-sm text-[var(--text-secondary)]">
-                      সক্রিয় সেবা
+                    <span className="text-sm text-secondary">
+                      Active Service
                     </span>
                   </label>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="form-actions">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-muted)] rounded-lg transition-colors"
+                    className="btn btn-secondary"
                   >
-                    বাতিল
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                    className="btn btn-primary"
                   >
-                    {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {editingService ? "আপডেট করুন" : "যোগ করুন"}
+                    {isSubmitting && <Loader2 className="animate-spin" />}
+                    {editingService ? "Update" : "Save"}
                   </button>
                 </div>
               </form>
