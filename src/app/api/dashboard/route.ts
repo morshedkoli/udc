@@ -12,42 +12,30 @@ export async function GET() {
 
     // Run independent queries in parallel
     const [
-      totalCustomers,
       totalServices,
+      totalSales,
       revenueAggregate,
       todayRevenueAggregate,
-      nonCompletedAssignments,
-      recentActivity,
+      recentSales,
     ] = await Promise.all([
-      prisma.customer.count(),
       prisma.service.count({ where: { status: "active" } }),
-      prisma.payment.aggregate({ _sum: { amount: true } }),
-      prisma.payment.aggregate({
+      prisma.sale.count(),
+      prisma.sale.aggregate({ _sum: { price: true } }),
+      prisma.sale.aggregate({
         where: {
-          paymentDate: { gte: todayStart, lte: todayEnd },
+          saleDate: { gte: todayStart, lte: todayEnd },
         },
-        _sum: { amount: true },
+        _sum: { price: true },
       }),
-      prisma.serviceAssignment.findMany({
-        where: { status: { not: "completed" } },
-        include: { payments: { select: { amount: true } } },
-      }),
-      prisma.activityLog.findMany({
-        orderBy: { createdAt: "desc" },
+      prisma.sale.findMany({
+        orderBy: { saleDate: "desc" },
         take: 5,
-        include: {
-          user: { select: { id: true, name: true } },
-        },
+        include: { service: true },
       }),
     ]);
 
-    const totalRevenue = revenueAggregate._sum.amount || 0;
-    const todayRevenue = todayRevenueAggregate._sum.amount || 0;
-
-    const pendingAmount = nonCompletedAssignments.reduce((sum, assignment) => {
-      const totalPaid = assignment.payments.reduce((pSum, p) => pSum + p.amount, 0);
-      return sum + Math.max(0, assignment.customPrice - totalPaid);
-    }, 0);
+    const totalRevenue = revenueAggregate._sum.price || 0;
+    const todayRevenue = todayRevenueAggregate._sum.price || 0;
 
     // Monthly revenue for last 6 months — run all 6 in parallel
     const monthlyQueries = Array.from({ length: 6 }, (_, idx) => {
@@ -61,27 +49,26 @@ export async function GET() {
         month: "short",
       });
 
-      return prisma.payment
+      return prisma.sale
         .aggregate({
-          where: { paymentDate: { gte: monthStart, lte: monthEnd } },
-          _sum: { amount: true },
+          where: { saleDate: { gte: monthStart, lte: monthEnd } },
+          _sum: { price: true },
         })
         .then((agg) => ({
           month: monthLabel,
-          revenue: agg._sum.amount || 0,
+          revenue: agg._sum.price || 0,
         }));
     });
 
     const monthlyRevenue = await Promise.all(monthlyQueries);
 
     return NextResponse.json({
-      totalCustomers,
       totalServices,
+      totalSales,
       totalRevenue,
       todayRevenue,
-      pendingAmount,
       monthlyRevenue,
-      recentActivity,
+      recentSales,
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

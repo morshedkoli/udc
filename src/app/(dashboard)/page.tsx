@@ -6,17 +6,14 @@ import { useSession } from "next-auth/react";
 import {
   TrendingUp,
   Wallet,
-  Users,
+  Receipt,
   Briefcase,
-  AlertCircle,
   PlusCircle,
-  Clock,
   ArrowRight,
-  ArrowUpRight,
-  ArrowDownRight,
+  User,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
-import { formatCurrency, formatRelativeTime } from "@/lib/formatters";
+import { formatCurrency, formatDate } from "@/lib/formatters";
 import { fetcher } from "@/lib/fetcher";
 import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 import Link from "next/link";
@@ -30,7 +27,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { DashboardData } from "@/types";
-
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24, scale: 0.98 },
@@ -46,7 +42,6 @@ const fadeUp = {
     },
   }),
 };
-
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -88,115 +83,46 @@ export default function DashboardPage() {
       label: "Today's Revenue",
       value: data?.todayRevenue ?? 0,
       icon: TrendingUp,
-      gradient: "from-emerald-500 to-teal-500",
-      lightBg: "bg-emerald-50 dark:bg-emerald-500/10",
-      color: "text-emerald-600 dark:text-emerald-400",
+      color: "#10b981",
       format: "currency",
-      change: 12.5,
-      positive: true,
     },
     {
       label: "Total Revenue",
       value: data?.totalRevenue ?? 0,
       icon: Wallet,
-      gradient: "from-blue-600 to-indigo-600",
-      lightBg: "bg-blue-50 dark:bg-blue-500/10",
-      color: "text-blue-600 dark:text-blue-400",
+      color: "#3b82f6",
       format: "currency",
-      change: 8.2,
-      positive: true,
     },
     {
-      label: "Total Customers",
-      value: data?.totalCustomers ?? 0,
-      icon: Users,
-      gradient: "from-violet-500 to-purple-500",
-      lightBg: "bg-violet-50 dark:bg-violet-500/10",
-      color: "text-violet-600 dark:text-violet-400",
+      label: "Total Sales",
+      value: data?.totalSales ?? 0,
+      icon: Receipt,
+      color: "#8b5cf6",
       format: "number",
-      change: 3.1,
-      positive: true,
     },
     {
-      label: "Total Services",
+      label: "Active Services",
       value: data?.totalServices ?? 0,
       icon: Briefcase,
-      gradient: "from-indigo-500 to-violet-500",
-      lightBg: "bg-indigo-50 dark:bg-indigo-500/10",
-      color: "text-indigo-600 dark:text-indigo-400",
+      color: "#6366f1",
       format: "number",
-      change: -2.4,
-      positive: false,
-    },
-    {
-      label: "Pending Amount",
-      value: data?.pendingAmount ?? 0,
-      icon: AlertCircle,
-      gradient: "from-rose-500 to-pink-500",
-      lightBg: "bg-rose-50 dark:bg-rose-500/10",
-      color: "text-rose-600 dark:text-rose-400",
-      format: "currency",
-      change: -5.8,
-      positive: false,
     },
   ];
 
   const quickActions = [
     {
-      href: "/assignments/new",
-      label: "New Assignment",
-      desc: "Assign a service",
-      icon: PlusCircle,
-      gradient: "from-indigo-500 to-violet-500",
+      href: "/sales",
+      label: "New Sale",
+      desc: "Record a service sale",
+      color: "#6366f1",
     },
     {
-      href: "/customers?new=true",
-      label: "New Customer",
-      desc: "Add a customer",
-      icon: Users,
-      gradient: "from-emerald-500 to-teal-500",
-    },
-    {
-      href: "/services?new=true",
+      href: "/services",
       label: "New Service",
-      desc: "Create a service",
-      icon: Briefcase,
-      gradient: "from-violet-500 to-purple-500",
+      desc: "Add a new service",
+      color: "#8b5cf6",
     },
   ];
-
-  const getGradientClass = (gradient: string) => {
-    const gradientMap: Record<string, string> = {
-      "from-emerald-500 to-teal-500": "linear-gradient(145deg, #10b981, #14b8a6)",
-      "from-blue-600 to-indigo-600": "linear-gradient(145deg, #2563eb, #6366f1)",
-      "from-violet-500 to-purple-500": "linear-gradient(145deg, #8b5cf6, #a855f7)",
-      "from-indigo-500 to-violet-500": "linear-gradient(145deg, #6366f1, #8b5cf6)",
-      "from-rose-500 to-pink-500": "linear-gradient(145deg, #f43f5e, #ec4899)",
-    };
-    return gradientMap[gradient] || gradientMap["from-indigo-500 to-violet-500"];
-  };
-
-  const getLightBgClass = (lightBg: string) => {
-    const bgMap: Record<string, string> = {
-      "bg-emerald-50 dark:bg-emerald-500/10": "background: rgba(16, 185, 129, 0.1);",
-      "bg-blue-50 dark:bg-blue-500/10": "background: rgba(59, 130, 246, 0.1);",
-      "bg-violet-50 dark:bg-violet-500/10": "background: rgba(139, 92, 246, 0.1);",
-      "bg-indigo-50 dark:bg-indigo-500/10": "background: rgba(99, 102, 241, 0.1);",
-      "bg-rose-50 dark:bg-rose-500/10": "background: rgba(244, 63, 94, 0.1);",
-    };
-    return bgMap[lightBg] || "";
-  };
-
-  const getColorClass = (color: string) => {
-    const colorMap: Record<string, string> = {
-      "text-emerald-600 dark:text-emerald-400": "#10b981",
-      "text-blue-600 dark:text-blue-400": "#3b82f6",
-      "text-violet-600 dark:text-violet-400": "#8b5cf6",
-      "text-indigo-600 dark:text-indigo-400": "#6366f1",
-      "text-rose-600 dark:text-rose-400": "#f43f5e",
-    };
-    return colorMap[color] || "#6366f1";
-  };
 
   return (
     <PageShell>
@@ -212,9 +138,7 @@ export default function DashboardPage() {
           <h1 className="dashboard-greeting-title">
             {getGreeting()}, {session?.user?.name || "Admin"}
           </h1>
-          <span className="dashboard-greeting-badge">
-            Premium
-          </span>
+          <span className="dashboard-greeting-badge">Premium</span>
         </div>
         <p className="dashboard-greeting-subtitle">
           Here's what's happening with your business today
@@ -222,9 +146,9 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Stat Cards */}
-      <div className="stats-grid">
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
         {isLoading
-          ? Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
+          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
           : stats.map((stat, i) => {
               const Icon = stat.icon;
               return (
@@ -236,23 +160,13 @@ export default function DashboardPage() {
                   initial="hidden"
                   animate="visible"
                 >
-                  <div 
-                    className="stat-card-glow"
-                    style={{ background: getGradientClass(stat.gradient) }}
-                  />
-                  
                   <div className="stat-card-header">
-                    <span className="stat-card-label">
-                      {stat.label}
-                    </span>
+                    <span className="stat-card-label">{stat.label}</span>
                     <div 
                       className="stat-card-icon"
-                      style={{ 
-                        background: getLightBgClass(stat.lightBg),
-                        color: getColorClass(stat.color)
-                      }}
+                      style={{ background: `${stat.color}1A`, color: stat.color }}
                     >
-                      <Icon style={{ color: getColorClass(stat.color) }} />
+                      <Icon style={{ color: stat.color }} />
                     </div>
                   </div>
                   <div className="stat-card-value">
@@ -266,16 +180,6 @@ export default function DashboardPage() {
                         <AnimatedNumber value={stat.value} />
                       )}
                     </div>
-                    <div 
-                      className={`stat-card-change ${stat.positive ? 'stat-card-change-positive' : 'stat-card-change-negative'}`}
-                    >
-                      {stat.positive ? (
-                        <ArrowUpRight />
-                      ) : (
-                        <ArrowDownRight />
-                      )}
-                      {Math.abs(stat.change)}%
-                    </div>
                   </div>
                 </motion.div>
               );
@@ -288,7 +192,7 @@ export default function DashboardPage() {
           animate={{ opacity: 1 }}
           className="error-alert"
         >
-          <AlertCircle />
+          <TrendingUp />
           <span className="error-alert-text">Failed to load dashboard data</span>
         </motion.div>
       )}
@@ -307,17 +211,11 @@ export default function DashboardPage() {
               className="dashboard-card chart-card"
             >
               <div className="chart-card-decor" />
-              
               <div className="chart-card-header">
                 <div>
-                  <h2 className="chart-card-title">
-                    Monthly Revenue
-                  </h2>
+                  <h2 className="chart-card-title">Monthly Revenue</h2>
                   <p className="chart-card-subtitle">Last 6 months</p>
                 </div>
-                <span className="chart-card-badge">
-                  +8.2% this month
-                </span>
               </div>
               <div className="chart-container">
                 <ResponsiveContainer width="100%" height="100%">
@@ -351,7 +249,7 @@ export default function DashboardPage() {
                       strokeWidth={3}
                       fill="url(#revenueGradient)"
                       dot={false}
-                      activeDot={{ r: 7, fill: "#6366f1", stroke: "#fff", strokeWidth: 3, filter: "drop-shadow(0 2px 4px rgba(99, 102, 241, 0.3))" }}
+                      activeDot={{ r: 7, fill: "#6366f1", stroke: "#fff", strokeWidth: 3 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -369,44 +267,36 @@ export default function DashboardPage() {
             className="dashboard-card quick-actions-card"
           >
             <div className="quick-actions-decor" />
-            
             <div className="quick-actions-header">
-              <h2 className="quick-actions-title">
-                Quick Actions
-              </h2>
+              <h2 className="quick-actions-title">Quick Actions</h2>
               <p className="quick-actions-subtitle">Get started quickly</p>
             </div>
             <div className="quick-actions-list">
-              {quickActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Link
-                    key={action.href}
-                    href={action.href}
-                    className="quick-action-item"
+              {quickActions.map((action) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className="quick-action-item"
+                >
+                  <div 
+                    className="quick-action-icon"
+                    style={{ background: `linear-gradient(145deg, ${action.color}, #7c3aed)` }}
                   >
-                    <div 
-                      className="quick-action-icon"
-                      style={{ background: getGradientClass(action.gradient) }}
-                    >
-                      <Icon />
-                    </div>
-                    <div className="quick-action-content">
-                      <p className="quick-action-label">
-                        {action.label}
-                      </p>
-                      <p className="quick-action-desc">{action.desc}</p>
-                    </div>
-                    <ArrowRight className="quick-action-arrow" />
-                  </Link>
-                );
-              })}
+                    <PlusCircle />
+                  </div>
+                  <div className="quick-action-content">
+                    <p className="quick-action-label">{action.label}</p>
+                    <p className="quick-action-desc">{action.desc}</p>
+                  </div>
+                  <ArrowRight className="quick-action-arrow" />
+                </Link>
+              ))}
             </div>
           </motion.div>
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Sales */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -414,18 +304,12 @@ export default function DashboardPage() {
         className="dashboard-card activity-card"
       >
         <div className="activity-decor" />
-        
         <div className="activity-header">
           <div>
-            <h2 className="activity-title">
-              Recent Activity
-            </h2>
-            <p className="activity-subtitle">Latest updates</p>
+            <h2 className="activity-title">Recent Sales</h2>
+            <p className="activity-subtitle">Latest service sales</p>
           </div>
-          <Link
-            href="/activity"
-            className="activity-link"
-          >
+          <Link href="/sales" className="activity-link">
             View all
             <ArrowRight />
           </Link>
@@ -442,23 +326,24 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        ) : data?.recentActivity && data.recentActivity.length > 0 ? (
+        ) : data?.recentSales && data.recentSales.length > 0 ? (
           <div className="activity-list">
-            {data.recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="activity-item"
-              >
-                <div className="activity-icon">
-                  <Clock />
+            {data.recentSales.map((sale) => (
+              <div key={sale.id} className="activity-item">
+                <div className="activity-icon" style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+                  <User style={{ color: '#6366f1' }} />
                 </div>
-                <div className="activity-details">
-                  <p className="activity-text">
-                    {activity.details}
-                  </p>
-                  <p className="activity-time">
-                    {formatRelativeTime(activity.createdAt)}
-                  </p>
+                <div className="activity-details" style={{ flex: 1 }}>
+                  <div className="flex items-center justify-between">
+                    <p className="activity-text">{sale.customerName}</p>
+                    <span className="amount-text" style={{ fontWeight: 600 }}>
+                      {formatCurrency(sale.price)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="activity-time">{sale.service?.name}</p>
+                    <p className="activity-time">{formatDate(sale.saleDate)}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -466,11 +351,11 @@ export default function DashboardPage() {
         ) : (
           <div className="empty-state">
             <div className="empty-state-icon">
-              <Clock />
+              <Receipt />
             </div>
-            <p className="empty-state-title">No recent activity</p>
+            <p className="empty-state-title">No recent sales</p>
             <p className="empty-state-description">
-              New activities will appear here
+              New sales will appear here
             </p>
           </div>
         )}

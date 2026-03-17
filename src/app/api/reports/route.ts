@@ -44,56 +44,42 @@ export async function GET(request: Request) {
 
     const { start, end } = getDateRange(period, startDate, endDate);
 
-    // Fetch assignments in date range with payments and relations
-    const assignments = await prisma.serviceAssignment.findMany({
+    // Fetch sales in date range with service relations
+    const sales = await prisma.sale.findMany({
       where: {
-        assignedDate: { gte: start, lte: end },
+        saleDate: { gte: start, lte: end },
       },
       include: {
-        customer: { select: { id: true, name: true } },
         service: { select: { id: true, name: true } },
-        payments: true,
       },
-      orderBy: { assignedDate: "desc" },
+      orderBy: { saleDate: "desc" },
     });
 
-    // Calculate total revenue from payments of filtered assignments
+    // Calculate total revenue
     let totalRevenue = 0;
     const serviceMap: Record<string, { name: string; count: number; revenue: number }> = {};
 
-    assignments.forEach((a) => {
-      const paymentTotal = a.payments.reduce((sum, p) => sum + p.amount, 0);
-      totalRevenue += paymentTotal;
+    sales.forEach((sale) => {
+      totalRevenue += sale.price;
 
       // Build top services data
-      const svcId = a.serviceId;
+      const svcId = sale.serviceId;
       if (!serviceMap[svcId]) {
-        serviceMap[svcId] = { name: a.service.name, count: 0, revenue: 0 };
+        serviceMap[svcId] = { name: sale.service.name, count: 0, revenue: 0 };
       }
       serviceMap[svcId].count += 1;
-      serviceMap[svcId].revenue += paymentTotal;
+      serviceMap[svcId].revenue += sale.price;
     });
 
     const topServices = Object.values(serviceMap)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
 
-    // Calculate pending payments
-    const pendingPayments = assignments.reduce((sum, a) => {
-      if (a.status !== "completed") {
-        const paid = a.payments.reduce((s, p) => s + p.amount, 0);
-        return sum + Math.max(0, a.customPrice - paid);
-      }
-      return sum;
-    }, 0);
-
     // Build chart data grouped by day
     const revenueByDay: Record<string, number> = {};
-    assignments.forEach((a) => {
-      a.payments.forEach((p) => {
-        const day = new Date(p.paymentDate).toISOString().split("T")[0];
-        revenueByDay[day] = (revenueByDay[day] || 0) + p.amount;
-      });
+    sales.forEach((sale) => {
+      const day = new Date(sale.saleDate).toISOString().split("T")[0];
+      revenueByDay[day] = (revenueByDay[day] || 0) + sale.price;
     });
 
     const chartData = Object.entries(revenueByDay)
@@ -104,12 +90,13 @@ export async function GET(request: Request) {
       }));
 
     return NextResponse.json({
-      assignments,
+      sales,
       totalRevenue,
-      totalAssignments: assignments.length,
+      totalSales: sales.length,
       topServices,
       chartData,
-      pendingPayments,
+      periodStart: start.toISOString(),
+      periodEnd: end.toISOString(),
     });
   } catch (error) {
     console.error("Error generating report:", error);

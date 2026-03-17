@@ -13,6 +13,7 @@ import {
   X,
   Loader2,
   PackageOpen,
+  AlertCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -52,11 +53,15 @@ export default function ServicesPage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ServiceInput>({
     resolver: zodResolver(serviceSchema),
     defaultValues: { name: "", description: "", defaultPrice: 0, category: "General", status: "active" },
   });
+
+  const statusValue = watch("status");
 
   function openAddModal() {
     setEditingService(null);
@@ -68,7 +73,7 @@ export default function ServicesPage() {
     setEditingService(service);
     reset({
       name: service.name,
-      description: service.description,
+      description: service.description || "",
       defaultPrice: service.defaultPrice,
       category: service.category,
       status: service.status as "active" | "inactive",
@@ -128,42 +133,31 @@ export default function ServicesPage() {
       </PageHeader>
 
       {/* Filters */}
-      <div className="filters-row">
-        <div className="filter-search">
-          <Search className="search-icon" />
+      <div className="search-box">
+        <div className="search-box-inner">
+          <Search className="search-box-icon" />
           <input
             type="text"
             placeholder="Search services..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="form-input search-input-with-icon"
+            className="search-box-input"
           />
         </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="filter-select"
-        >
-          <option value="">All Categories</option>
-          {SERVICE_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Error State */}
       {error && (
-        <div className="alert-error">
-          Failed to load data. Please try again.
+        <div className="alert alert-error">
+          <AlertCircle />
+          <span>Failed to load data. Please try again.</span>
         </div>
       )}
 
       {/* Table */}
-      <div className="table-container">
+      <div className="dashboard-card">
         {isLoading ? (
-          <div className="p-8">
+          <div className="p-6">
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="skeleton-row">
@@ -176,21 +170,25 @@ export default function ServicesPage() {
             </div>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="empty-state-small">
-            <PackageOpen />
-            <p>No services found</p>
-            <span>Click the button above to add a new service</span>
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <PackageOpen />
+            </div>
+            <p className="empty-state-title">No services found</p>
+            <p className="empty-state-description">
+              Click the button above to add a new service
+            </p>
           </div>
         ) : (
-          <div className="table-overflow">
-            <table className="table">
+          <div className="data-table-container">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Service Name</th>
                   <th>Category</th>
                   <th>Price</th>
                   <th>Status</th>
-                  <th className="table-header-actions">Actions</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -219,26 +217,26 @@ export default function ServicesPage() {
                       </span>
                     </td>
                     <td>
-                      <span className="service-price">
+                      <span className="amount-text">
                         {formatCurrency(service.defaultPrice)}
                       </span>
                     </td>
                     <td>
                       <span
-                        className={`status-badge ${
+                        className={`badge ${
                           service.status === "active"
-                            ? "status-active"
-                            : "status-inactive"
+                            ? "badge-success"
+                            : "badge-default"
                         }`}
                       >
                         {service.status === "active" ? "Active" : "Inactive"}
                       </span>
                     </td>
                     <td>
-                      <div className="customer-actions">
+                      <div className="table-actions">
                         <button
                           onClick={() => openEditModal(service)}
-                          className="action-btn edit"
+                          className="table-action-btn table-action-edit"
                           title="Edit"
                         >
                           <Pencil />
@@ -246,7 +244,7 @@ export default function ServicesPage() {
                         <button
                           onClick={() => handleDelete(service)}
                           disabled={deletingId === service.id}
-                          className="action-btn delete"
+                          className="table-action-btn table-action-delete"
                           title="Delete"
                         >
                           {deletingId === service.id ? (
@@ -272,38 +270,38 @@ export default function ServicesPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="modal-overlay-full"
+            className="modal-overlay"
           >
             <div
-              className="modal-backdrop-full"
+              className="modal-backdrop"
               onClick={closeModal}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="modal-content-full"
+              className="modal-content"
             >
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-semibold text-primary">
+              <div className="modal-header">
+                <h2 className="modal-title">
                   {editingService ? "Edit Service" : "Add New Service"}
                 </h2>
                 <button
                   onClick={closeModal}
-                  className="action-btn"
+                  className="modal-close"
                 >
-                  <X className="w-5 h-5" />
+                  <X />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="modal-body">
                 <div className="form-group">
-                  <label className="form-label form-label-required">
-                    Service Name
+                  <label className="form-label">
+                    Service Name *
                   </label>
                   <input
                     {...register("name")}
-                    className="form-input"
+                    className="input-premium"
                     placeholder="Enter service name"
                   />
                   {errors.name && (
@@ -318,22 +316,22 @@ export default function ServicesPage() {
                   <textarea
                     {...register("description")}
                     rows={2}
-                    className="form-textarea"
+                    className="input-premium resize-none"
                     placeholder="Service description (optional)"
                   />
                 </div>
 
                 <div className="form-row">
                   <div>
-                    <label className="form-label form-label-required">
-                      Default Price
+                    <label className="form-label">
+                      Default Price *
                     </label>
                     <input
                       {...register("defaultPrice", { valueAsNumber: true })}
                       type="number"
                       min="0"
                       step="any"
-                      className="form-input"
+                      className="input-premium"
                       placeholder="0"
                     />
                     {errors.defaultPrice && (
@@ -349,7 +347,7 @@ export default function ServicesPage() {
                     </label>
                     <select
                       {...register("category")}
-                      className="form-select"
+                      className="input-premium"
                     >
                       {SERVICE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -360,16 +358,12 @@ export default function ServicesPage() {
                   </div>
                 </div>
 
-                <div>
+                <div className="form-group">
                   <label className="checkbox-wrapper">
                     <input
                       type="checkbox"
-                      {...register("status", {
-                        setValueAs: (v: boolean) => (v ? "active" : "inactive"),
-                      })}
-                      defaultChecked={
-                        editingService ? editingService.status === "active" : true
-                      }
+                      checked={statusValue === "active"}
+                      onChange={(e) => setValue("status", e.target.checked ? "active" : "inactive", { shouldValidate: true })}
                       className="form-checkbox"
                     />
                     <span className="text-sm text-secondary">
@@ -378,18 +372,18 @@ export default function ServicesPage() {
                   </label>
                 </div>
 
-                <div className="form-actions">
+                <div className="modal-footer">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="btn btn-secondary"
+                    className="btn-ghost"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="btn btn-primary"
+                    className="btn-primary"
                   >
                     {isSubmitting && <Loader2 className="animate-spin" />}
                     {editingService ? "Update" : "Save"}

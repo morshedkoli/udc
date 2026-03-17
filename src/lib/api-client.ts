@@ -1,18 +1,12 @@
 import type {
-  Customer,
-  CustomerDetail,
   Service,
-  AssignmentWithRelations,
-  PaymentWithRelations,
+  Sale,
   DashboardData,
-  ActivityLog,
 } from "@/types";
-import type { SearchResult, ReportsData, Notification } from "@/types";
+import type { ReportsData, Notification } from "@/types";
 import type {
-  CustomerInput,
   ServiceInput,
-  AssignmentInput,
-  PaymentInput,
+  SaleInput,
 } from "@/lib/validators";
 
 class ApiError extends Error {
@@ -38,28 +32,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  // Customers
-  getCustomers: (query?: string) =>
-    request<Customer[]>(`/api/customers${query ? `?q=${encodeURIComponent(query)}` : ""}`),
-
-  getCustomer: (id: string) =>
-    request<CustomerDetail>(`/api/customers/${id}`),
-
-  createCustomer: (data: CustomerInput) =>
-    request<Customer>("/api/customers", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  updateCustomer: (id: string, data: CustomerInput) =>
-    request<Customer>(`/api/customers/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-
-  deleteCustomer: (id: string) =>
-    request<{ message: string }>(`/api/customers/${id}`, { method: "DELETE" }),
-
   // Services
   getServices: (params?: { category?: string; status?: string }) => {
     const sp = new URLSearchParams();
@@ -84,52 +56,33 @@ export const api = {
   deleteService: (id: string) =>
     request<{ message: string }>(`/api/services/${id}`, { method: "DELETE" }),
 
-  // Assignments
-  getAssignments: (params?: { customerId?: string; serviceId?: string; status?: string }) => {
+  // Sales
+  getSales: (params?: { startDate?: string; endDate?: string; serviceId?: string }) => {
     const sp = new URLSearchParams();
-    if (params?.customerId) sp.set("customerId", params.customerId);
+    if (params?.startDate) sp.set("startDate", params.startDate);
+    if (params?.endDate) sp.set("endDate", params.endDate);
     if (params?.serviceId) sp.set("serviceId", params.serviceId);
-    if (params?.status) sp.set("status", params.status);
     const qs = sp.toString();
-    return request<AssignmentWithRelations[]>(`/api/assignments${qs ? `?${qs}` : ""}`);
+    return request<Sale[]>(`/api/sales${qs ? `?${qs}` : ""}`);
   },
 
-  createAssignment: (data: AssignmentInput) =>
-    request<AssignmentWithRelations>("/api/assignments", {
+  createSale: (data: SaleInput) =>
+    request<Sale>("/api/sales", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  deleteAssignment: (id: string) =>
-    request<{ message: string }>(`/api/assignments/${id}`, { method: "DELETE" }),
-
-  // Payments
-  getPayments: (assignmentId?: string) =>
-    request<PaymentWithRelations[]>(
-      `/api/payments${assignmentId ? `?assignmentId=${assignmentId}` : ""}`
-    ),
-
-  createPayment: (data: PaymentInput) =>
-    request<PaymentWithRelations>("/api/payments", {
-      method: "POST",
+  updateSale: (id: string, data: SaleInput) =>
+    request<Sale>(`/api/sales/${id}`, {
+      method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  deleteSale: (id: string) =>
+    request<{ message: string }>(`/api/sales/${id}`, { method: "DELETE" }),
 
   // Dashboard
   getDashboard: () => request<DashboardData>("/api/dashboard"),
-
-  // Search
-  search: (query: string) =>
-    request<SearchResult[]>(`/api/search?q=${encodeURIComponent(query)}`),
-
-  // Activity
-  getActivity: (params?: { type?: string; limit?: number }) => {
-    const sp = new URLSearchParams();
-    if (params?.type) sp.set("type", params.type);
-    if (params?.limit) sp.set("limit", String(params.limit));
-    const qs = sp.toString();
-    return request<ActivityLog[]>(`/api/activity${qs ? `?${qs}` : ""}`);
-  },
 
   // Reports
   getReports: (params: { period: string; startDate?: string; endDate?: string }) => {
