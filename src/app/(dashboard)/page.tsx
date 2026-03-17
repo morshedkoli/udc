@@ -144,17 +144,10 @@ export default function DashboardPage() {
   const quickActions = [
     {
       href: "/assignments/new",
-      label: "New Assignment",
-      desc: "Assign a service",
+      label: "Record Service",
+      desc: "Log a service provided",
       icon: PlusCircle,
       gradient: "from-indigo-500 to-violet-500",
-    },
-    {
-      href: "/customers?new=true",
-      label: "New Customer",
-      desc: "Add a customer",
-      icon: Users,
-      gradient: "from-emerald-500 to-teal-500",
     },
     {
       href: "/services?new=true",

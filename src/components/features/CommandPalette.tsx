@@ -39,9 +39,8 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Customers", href: "/customers", icon: Users },
   { label: "Services", href: "/services", icon: Briefcase },
-  { label: "Assignments", href: "/assignments", icon: ClipboardList },
+  { label: "Service Records", href: "/assignments", icon: ClipboardList },
   { label: "Payments", href: "/payments", icon: CreditCard },
   { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Activity", href: "/activity", icon: Activity },
@@ -49,8 +48,7 @@ const NAV_ITEMS = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: "New Assignment", href: "/assignments/new", icon: PlusCircle },
-  { label: "New Customer", href: "/customers?new=true", icon: Users },
+  { label: "Record Service", href: "/assignments/new", icon: PlusCircle },
   { label: "New Service", href: "/services?new=true", icon: Briefcase },
 ];
 

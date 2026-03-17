@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, Briefcase, ClipboardList, CreditCard, Loader2 } from "lucide-react";
+import { X, Briefcase, ClipboardCheck, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
-import { customerSchema, serviceSchema } from "@/lib/validators";
-import type { CustomerInput, ServiceInput } from "@/lib/validators";
+import { serviceSchema } from "@/lib/validators";
+import type { ServiceInput } from "@/lib/validators";
 import { SERVICE_CATEGORIES } from "@/lib/constants";
 
 interface QuickAddModalProps {
@@ -17,15 +17,15 @@ interface QuickAddModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type TabType = "customer" | "service";
+type TabType = "service" | "record";
 
 const TABS: { key: TabType; label: string; icon: React.ElementType }[] = [
-  { key: "customer", label: "Customer", icon: Users },
-  { key: "service", label: "Service", icon: Briefcase },
+  { key: "service", label: "New Service", icon: Briefcase },
+  { key: "record", label: "Record Service", icon: ClipboardCheck },
 ];
 
 export function QuickAddModal({ open, onOpenChange }: QuickAddModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("customer");
+  const [activeTab, setActiveTab] = useState<TabType>("service");
   const router = useRouter();
 
   if (!open) return null;
@@ -79,14 +79,6 @@ export function QuickAddModal({ open, onOpenChange }: QuickAddModalProps) {
 
             {/* Content */}
             <div className="px-6 py-4">
-              {activeTab === "customer" && (
-                <QuickAddCustomerForm
-                  onSuccess={() => {
-                    onOpenChange(false);
-                    router.refresh();
-                  }}
-                />
-              )}
               {activeTab === "service" && (
                 <QuickAddServiceForm
                   onSuccess={() => {
@@ -95,66 +87,33 @@ export function QuickAddModal({ open, onOpenChange }: QuickAddModalProps) {
                   }}
                 />
               )}
+              {activeTab === "record" && (
+                <div className="text-center py-6">
+                  <ClipboardCheck className="w-10 h-10 text-[var(--brand-primary)] mx-auto mb-3" />
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Use the Services page to record a provided service, or go to the full form.
+                  </p>
+                  <button
+                    onClick={() => { onOpenChange(false); router.push("/assignments/new"); }}
+                    className="btn-primary flex items-center gap-2 mx-auto"
+                  >
+                    <ClipboardCheck className="w-4 h-4" />
+                    Record Service (Full Form)
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Footer hint */}
             <div className="px-6 py-3 border-t border-[var(--border-subtle)] bg-[var(--bg-muted)]">
               <p className="text-xs text-[var(--text-tertiary)]">
-                For assignments and payments, use the full forms in their respective pages.
+                To record a service quickly, click the ✓ icon on any service row in the Services page.
               </p>
             </div>
           </motion.div>
         </>
       )}
     </AnimatePresence>
-  );
-}
-
-function QuickAddCustomerForm({ onSuccess }: { onSuccess: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<CustomerInput>({
-    resolver: zodResolver(customerSchema),
-  });
-
-  async function onSubmit(data: CustomerInput) {
-    setLoading(true);
-    try {
-      await api.createCustomer(data);
-      toast.success("Customer created successfully");
-      onSuccess();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create customer");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Name *</label>
-        <input {...register("name")} className="input-premium w-full" placeholder="Customer name" />
-        {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Phone</label>
-          <input {...register("phone")} className="input-premium w-full" placeholder="Phone number" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Email</label>
-          <input {...register("email")} className="input-premium w-full" placeholder="Email" />
-        </div>
-      </div>
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full btn-primary flex items-center justify-center gap-2 py-2.5"
-      >
-        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-        Add Customer
-      </button>
-    </form>
   );
 }
 

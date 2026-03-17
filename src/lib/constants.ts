@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Briefcase, ClipboardList, CreditCard, BarChart3, Activity, Settings, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Briefcase, ClipboardList, CreditCard, BarChart3, Activity, Settings, PlusCircle } from "lucide-react";
 
 export const NAV_ITEMS = [
   {
@@ -10,9 +10,8 @@ export const NAV_ITEMS = [
   {
     group: "Management",
     items: [
-      { href: "/customers", label: "Customers", icon: Users },
       { href: "/services", label: "Services", icon: Briefcase },
-      { href: "/assignments", label: "Assignments", icon: ClipboardList },
+      { href: "/assignments", label: "Service Records", icon: ClipboardList },
       { href: "/payments", label: "Payments", icon: CreditCard },
     ],
   },
@@ -32,8 +31,7 @@ export const NAV_ITEMS = [
 ] as const;
 
 export const QUICK_ACTIONS = [
-  { href: "/assignments/new", label: "New Assignment", icon: PlusCircle, color: "text-indigo-500" },
-  { href: "/customers?new=true", label: "New Customer", icon: Users, color: "text-emerald-500" },
+  { href: "/assignments/new", label: "Record Service", icon: PlusCircle, color: "text-indigo-500" },
   { href: "/services?new=true", label: "New Service", icon: Briefcase, color: "text-violet-500" },
 ] as const;
 
