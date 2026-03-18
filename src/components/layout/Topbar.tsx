@@ -6,7 +6,6 @@ import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { Sun, Moon, Search } from "lucide-react";
 import { NAV_ITEMS } from "@/lib/constants";
-import { NotificationPanel } from "@/components/features/NotificationPanel";
 
 function getPageTitle(pathname: string) {
   for (const group of NAV_ITEMS) {
@@ -50,8 +49,6 @@ export function Topbar({ onSearchOpen }: { onSearchOpen?: () => void }) {
             Ctrl K
           </kbd>
         </button>
-
-        <NotificationPanel />
 
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

@@ -6,9 +6,10 @@ export const runtime = "nodejs";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const result = saleSchema.safeParse(body);
 
@@ -19,12 +20,22 @@ export async function PUT(
       );
     }
 
+    const updateData: any = {
+      serviceId: result.data.serviceId,
+      customerGender: result.data.customerGender,
+      price: result.data.price,
+      quantity: result.data.quantity,
+      notes: result.data.notes,
+      saleDate: result.data.saleDate ? new Date(result.data.saleDate) : undefined,
+    };
+    
+    if (result.data.customerName !== undefined) {
+      updateData.customerName = result.data.customerName || null;
+    }
+    
     const sale = await prisma.sale.update({
-      where: { id: params.id },
-      data: {
-        ...result.data,
-        saleDate: result.data.saleDate ? new Date(result.data.saleDate) : undefined,
-      },
+      where: { id },
+      data: updateData,
       include: { service: true },
     });
 
@@ -40,11 +51,12 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.sale.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Sale deleted successfully" });

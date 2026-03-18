@@ -17,7 +17,6 @@ import {
   ClipboardList,
   CreditCard,
   PlusCircle,
-  Search,
   BarChart3,
   Activity,
   Settings,

@@ -65,7 +65,7 @@ export function NotificationPanel() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[380px] max-h-[480px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-xl overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-[380px] max-h-[480px] bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-2xl overflow-hidden z-[60]">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
             <h3 className="text-sm font-semibold text-[var(--text-primary)]">Notifications</h3>

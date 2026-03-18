@@ -186,7 +186,7 @@ export default function ReportsPage() {
         head: [["Date", "Customer", "Gender", "Service", "Price"]],
         body: sales.map((s) => [
           formatDate(s.saleDate),
-          s.customerName,
+          s.customerName || "Anonymous",
           s.customerGender.charAt(0).toUpperCase() + s.customerGender.slice(1),
           s.service?.name || "Unknown",
           formatCurrency(s.price),

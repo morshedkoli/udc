@@ -17,6 +17,8 @@ import {
   Calendar,
   DollarSign,
   AlertCircle,
+  Minus,
+  Package,
 } from "lucide-react";
 import { PageShell } from "@/components/layout/PageShell";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -44,7 +46,7 @@ export default function SalesPage() {
     if (!debouncedSearch) return true;
     const q = debouncedSearch.toLowerCase();
     return (
-      s.customerName.toLowerCase().includes(q) ||
+      (s.customerName?.toLowerCase() || "").includes(q) ||
       s.service?.name.toLowerCase().includes(q)
     );
   });
@@ -63,19 +65,24 @@ export default function SalesPage() {
       customerName: "",
       customerGender: "male",
       price: 0,
+      quantity: 1,
       saleDate: new Date().toISOString().split("T")[0],
       notes: "",
     },
   });
 
   const serviceIdValue = watch("serviceId");
+  const quantityValue = watch("quantity");
 
-  // Auto-fill price when service changes
+  // Auto-fill price when service or quantity changes
   const selectedService = services?.find((s) => s.id === serviceIdValue);
   if (selectedService && serviceIdValue) {
+    const calculatedPrice = selectedService.defaultPrice * (quantityValue || 1);
     const currentPrice = watch("price");
-    if (currentPrice === 0 || currentPrice === undefined) {
-      setValue("price", selectedService.defaultPrice);
+    // Only auto-update if price matches the previous calculation or is 0
+    if (currentPrice === 0 || currentPrice === undefined || 
+        currentPrice === selectedService.defaultPrice * ((quantityValue || 1) - 1)) {
+      setValue("price", calculatedPrice);
     }
   }
 
@@ -86,6 +93,7 @@ export default function SalesPage() {
       customerName: "",
       customerGender: "male",
       price: 0,
+      quantity: 1,
       saleDate: new Date().toISOString().split("T")[0],
       notes: "",
     });
@@ -96,9 +104,10 @@ export default function SalesPage() {
     setEditingSale(sale);
     reset({
       serviceId: sale.serviceId,
-      customerName: sale.customerName,
+      customerName: sale.customerName || "",
       customerGender: sale.customerGender as "male" | "female" | "other",
       price: sale.price,
+      quantity: sale.quantity || 1,
       saleDate: new Date(sale.saleDate).toISOString().split("T")[0],
       notes: sale.notes || "",
     });
@@ -221,7 +230,8 @@ export default function SalesPage() {
                   <th>Customer</th>
                   <th>Gender</th>
                   <th>Service</th>
-                  <th>Price</th>
+                  <th>Qty</th>
+                  <th>Total</th>
                   <th className="text-right">Actions</th>
                 </tr>
               </thead>
@@ -238,11 +248,11 @@ export default function SalesPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${sale.customerName ? 'bg-gradient-to-br from-indigo-400 to-purple-500' : 'bg-gradient-to-br from-gray-400 to-gray-500'}`}>
                           <User className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-medium text-primary">
-                          {sale.customerName}
+                        <span className={`font-medium ${sale.customerName ? 'text-primary' : 'text-secondary'}`}>
+                          {sale.customerName || "Anonymous"}
                         </span>
                       </div>
                     </td>
@@ -254,6 +264,11 @@ export default function SalesPage() {
                     <td>
                       <span className="text-primary">
                         {sale.service?.name || "Unknown Service"}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge badge-default">
+                        ×{sale.quantity || 1}
                       </span>
                     </td>
                     <td>
@@ -292,130 +307,278 @@ export default function SalesPage() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Premium Sale Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="modal-overlay"
+            className="sale-modal-overlay"
           >
-            <div className="modal-backdrop" onClick={closeModal} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="sale-modal-backdrop"
+              onClick={closeModal}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="modal-content"
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="sale-modal-container"
             >
-              <div className="modal-header">
-                <h2 className="modal-title">
-                  {editingSale ? "Edit Sale" : "Record New Sale"}
-                </h2>
-                <button onClick={closeModal} className="modal-close">
-                  <X />
+              {/* Premium Header */}
+              <div className="sale-modal-header">
+                <div className="sale-modal-header-content">
+                  <div className="sale-modal-icon">
+                    <Receipt className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="sale-modal-title">
+                      {editingSale ? "Edit Sale Record" : "Record New Sale"}
+                    </h2>
+                    <p className="sale-modal-subtitle">
+                      {editingSale ? "Update the sale details below" : "Fill in the details to record a new sale"}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={closeModal} className="sale-modal-close">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="modal-body">
-                {/* Customer Name */}
-                <div className="form-group">
-                  <label className="form-label">Customer Name *</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" />
-                    <input
-                      {...register("customerName")}
-                      className="input-premium pl-10"
-                      placeholder="Enter customer name"
-                    />
+              <form onSubmit={handleSubmit(onSubmit)} className="sale-modal-body">
+                {/* Customer Section */}
+                <div className="sale-form-section">
+                  <div className="sale-section-header">
+                    <User className="w-4 h-4" />
+                    <span>Customer Information</span>
                   </div>
-                  {errors.customerName && (
-                    <p className="form-error">{errors.customerName.message}</p>
-                  )}
-                </div>
 
-                {/* Gender & Date */}
-                <div className="form-row">
-                  <div>
-                    <label className="form-label">Gender *</label>
-                    <select
-                      {...register("customerGender")}
-                      className="input-premium"
-                    >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label">Date *</label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" />
+                  <div className="sale-form-grid">
+                    {/* Customer Name */}
+                    <div className="sale-form-field sale-form-field-full">
+                      <label className="sale-form-label">Customer Name</label>
+                      <div className="sale-input-wrapper">
+                        <input
+                          {...register("customerName")}
+                          className="sale-input"
+                          placeholder="Enter customer name (optional)"
+                        />
+                        <div className="sale-input-hint">Leave empty for anonymous</div>
+                      </div>
+                      {errors.customerName && (
+                        <p className="sale-form-error">{errors.customerName.message}</p>
+                      )}
+                    </div>
+
+                    {/* Gender Selection - Premium Toggle */}
+                    <div className="sale-form-field">
+                      <label className="sale-form-label">Gender</label>
+                      <div className="sale-gender-selector">
+                        {[
+                          { value: "male", label: "Male" },
+                          { value: "female", label: "Female" },
+                          { value: "other", label: "Other" },
+                        ].map((option) => (
+                          <label
+                            key={option.value}
+                            className={`sale-gender-option ${watch("customerGender") === option.value ? "active" : ""}`}
+                          >
+                            <input
+                              type="radio"
+                              {...register("customerGender")}
+                              value={option.value}
+                              className="sr-only"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sale Date */}
+                    <div className="sale-form-field">
+                      <label className="sale-form-label">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Sale Date
+                      </label>
                       <input
                         type="date"
                         {...register("saleDate")}
-                        className="input-premium pl-10"
+                        className="sale-input"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Service & Price */}
-                <div className="form-row">
-                  <div>
-                    <label className="form-label">Service *</label>
-                    <select
-                      {...register("serviceId")}
-                      className="input-premium"
-                    >
-                      <option value="">Select a service</option>
-                      {(services || []).map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} - {formatCurrency(s.defaultPrice)}
-                        </option>
+                {/* Service Section */}
+                <div className="sale-form-section">
+                  <div className="sale-section-header">
+                    <Package className="w-4 h-4" />
+                    <span>Service Details</span>
+                  </div>
+
+                  {/* Service Selection */}
+                  <div className="sale-form-field">
+                    <label className="sale-form-label">Select Service</label>
+                    <div className="sale-service-grid">
+                      {(services || []).slice(0, 6).map((s) => (
+                        <label
+                          key={s.id}
+                          className={`sale-service-card ${serviceIdValue === s.id ? "active" : ""}`}
+                        >
+                          <input
+                            type="radio"
+                            {...register("serviceId")}
+                            value={s.id}
+                            className="sr-only"
+                          />
+                          <span className="sale-service-name">{s.name}</span>
+                          <span className="sale-service-price">{formatCurrency(s.defaultPrice)}</span>
+                        </label>
                       ))}
-                    </select>
-                    {errors.serviceId && (
-                      <p className="form-error">{errors.serviceId.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="form-label">Price *</label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" />
-                      <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        {...register("price", { valueAsNumber: true })}
-                        className="input-premium pl-10"
-                        placeholder="0"
-                      />
                     </div>
-                    {errors.price && (
-                      <p className="form-error">{errors.price.message}</p>
+                    {(services || []).length > 6 && (
+                      <select
+                        {...register("serviceId")}
+                        className="sale-input mt-3"
+                      >
+                        <option value="">More services...</option>
+                        {(services || []).slice(6).map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} - {formatCurrency(s.defaultPrice)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {errors.serviceId && (
+                      <p className="sale-form-error">{errors.serviceId.message}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="form-group">
-                  <label className="form-label">Notes</label>
-                  <textarea
-                    {...register("notes")}
-                    rows={2}
-                    className="input-premium resize-none"
-                    placeholder="Additional notes (optional)"
-                  />
+                {/* Pricing Section */}
+                <div className="sale-form-section">
+                  <div className="sale-section-header">
+                    <DollarSign className="w-4 h-4" />
+                    <span>Pricing</span>
+                  </div>
+
+                  <div className="sale-pricing-row">
+                    {/* Quantity Stepper */}
+                    <div className="sale-form-field">
+                      <label className="sale-form-label">Quantity</label>
+                      <div className="sale-quantity-stepper">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = watch("quantity") || 1;
+                            if (current > 1) setValue("quantity", current - 1);
+                          }}
+                          className="sale-qty-btn"
+                          disabled={quantityValue <= 1}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="number"
+                          min="1"
+                          {...register("quantity", { valueAsNumber: true })}
+                          className="sale-qty-input"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const current = watch("quantity") || 1;
+                            setValue("quantity", current + 1);
+                          }}
+                          className="sale-qty-btn"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Total Price */}
+                    <div className="sale-form-field sale-form-field-grow">
+                      <label className="sale-form-label">Total Amount</label>
+                      <div className="sale-price-input-wrapper">
+                        <span className="sale-price-currency">৳</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          {...register("price", { valueAsNumber: true })}
+                          className="sale-price-input"
+                          placeholder="0"
+                        />
+                      </div>
+                      {errors.price && (
+                        <p className="sale-form-error">{errors.price.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Price Summary */}
+                  {selectedService && (
+                    <motion.div
+                      className="sale-price-summary"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                    >
+                      <div className="sale-price-row">
+                        <span>Unit Price</span>
+                        <span>{formatCurrency(selectedService.defaultPrice)}</span>
+                      </div>
+                      <div className="sale-price-row">
+                        <span>Quantity</span>
+                        <span>× {quantityValue || 1}</span>
+                      </div>
+                      <div className="sale-price-row sale-price-total">
+                        <span>Subtotal</span>
+                        <span>{formatCurrency(selectedService.defaultPrice * (quantityValue || 1))}</span>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
 
-                <div className="modal-footer">
-                  <button type="button" onClick={closeModal} className="btn-ghost">
+                {/* Notes Section */}
+                <div className="sale-form-section sale-form-section-flat">
+                  <div className="sale-form-field">
+                    <label className="sale-form-label sale-form-label-optional">
+                      Notes
+                      <span className="sale-optional-tag">Optional</span>
+                    </label>
+                    <textarea
+                      {...register("notes")}
+                      rows={2}
+                      className="sale-input sale-textarea"
+                      placeholder="Add any additional notes about this sale..."
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="sale-modal-footer">
+                  <button type="button" onClick={closeModal} className="sale-btn-cancel">
                     Cancel
                   </button>
-                  <button type="submit" disabled={isSubmitting} className="btn-primary">
-                    {isSubmitting && <Loader2 className="animate-spin" />}
-                    {editingSale ? "Update" : "Save"}
+                  <button type="submit" disabled={isSubmitting} className="sale-btn-submit">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Receipt className="w-4 h-4" />
+                        <span>{editingSale ? "Update Sale" : "Record Sale"}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>

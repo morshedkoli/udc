@@ -56,11 +56,21 @@ export async function POST(request: Request) {
       );
     }
 
+    const saleData: any = {
+      serviceId: result.data.serviceId,
+      customerGender: result.data.customerGender,
+      price: result.data.price,
+      quantity: result.data.quantity,
+      notes: result.data.notes,
+      saleDate: result.data.saleDate ? new Date(result.data.saleDate) : new Date(),
+    };
+    
+    if (result.data.customerName) {
+      saleData.customerName = result.data.customerName;
+    }
+    
     const sale = await prisma.sale.create({
-      data: {
-        ...result.data,
-        saleDate: result.data.saleDate ? new Date(result.data.saleDate) : new Date(),
-      },
+      data: saleData,
       include: { service: true },
     });
 

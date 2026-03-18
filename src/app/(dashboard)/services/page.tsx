@@ -28,7 +28,7 @@ import type { Service } from "@/types";
 
 export default function ServicesPage() {
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, _setCategoryFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

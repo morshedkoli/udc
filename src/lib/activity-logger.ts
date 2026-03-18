@@ -10,28 +10,18 @@ export async function logActivity(
   userId?: string
 ) {
   try {
-    await Promise.all([
-      prisma.activityLog.create({
-        data: {
-          action,
-          entityType,
-          entityId,
-          details,
-          userId: userId || null,
-        },
-      }),
-      prisma.notification.create({
-        data: {
-          title: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${action}`,
-          message: details,
-          type: action === "deleted" ? "warning" : action === "created" ? "success" : "info",
-          entityType,
-          entityId,
-          href: getEntityHref(entityType, entityId),
-          userId: userId || null,
-        },
-      }),
-    ]);
+    // ActivityLog model temporarily disabled - needs prisma generate
+    await prisma.notification.create({
+      data: {
+        title: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} ${action}`,
+        message: details,
+        type: action === "deleted" ? "warning" : action === "created" ? "success" : "info",
+        entityType,
+        entityId,
+        href: getEntityHref(entityType, entityId),
+        userId: userId || null,
+      },
+    });
   } catch (error) {
     console.error("Failed to log activity:", error);
   }

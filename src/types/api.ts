@@ -11,14 +11,7 @@ export interface SearchResult {
   href: string;
 }
 
-export interface ReportsData {
-  assignments: import("./entities").AssignmentWithRelations[];
-  totalRevenue: number;
-  totalAssignments: number;
-  topServices: { name: string; count: number; revenue: number }[];
-  chartData: { date: string; revenue: number }[];
-  pendingPayments: number;
-}
+// ReportsData is defined in entities.ts to avoid duplication
 
 export interface Notification {
   id: string;

@@ -66,7 +66,7 @@ PopoverAnchor.displayName = "PopoverAnchor";
 const PopoverContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { align?: string; sideOffset?: number }
->(({ className, align: _align, sideOffset: _sideOffset, ...props }, ref) => {
+>(({ className, align: _, sideOffset: __, ...props }, ref) => {
   const ctx = React.useContext(PopoverContext);
   const contentRef = React.useRef<HTMLDivElement>(null);
 

@@ -81,7 +81,7 @@ SelectTrigger.displayName = "SelectTrigger";
 const SelectContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { position?: string }
->(({ className, children, position: _position, ...props }, ref) => {
+>(({ className, children, position: _, ...props }, ref) => {
   const ctx = React.useContext(SelectContext);
   const contentRef = React.useRef<HTMLDivElement>(null);
 

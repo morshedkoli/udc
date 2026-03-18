@@ -16,9 +16,10 @@ export interface Service extends BaseEntity {
 
 export interface Sale extends BaseEntity {
   serviceId: string;
-  customerName: string;
+  customerName?: string;
   customerGender: Gender;
   price: number;
+  quantity: number;
   saleDate: string;
   notes: string;
   service?: Service;
@@ -27,6 +28,7 @@ export interface Sale extends BaseEntity {
 // Enums as union types
 export type ServiceStatus = "active" | "inactive";
 export type Gender = "male" | "female" | "other";
+export type AssignmentStatus = "active" | "completed" | "cancelled";
 
 export interface DashboardData {
   todayRevenue: number;

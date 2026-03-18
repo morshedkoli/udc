@@ -21,7 +21,7 @@ TooltipTrigger.displayName = "TooltipTrigger";
 const TooltipContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { sideOffset?: number }
->(({ className, sideOffset: _sideOffset, ...props }, ref) => (
+>(({ className, sideOffset: _, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(

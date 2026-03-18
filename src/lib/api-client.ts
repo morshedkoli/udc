@@ -7,7 +7,18 @@ import type { ReportsData, Notification } from "@/types";
 import type {
   ServiceInput,
   SaleInput,
+  CustomerInput,
 } from "@/lib/validators";
+
+// Simple customer type for QuickAddModal
+interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  createdAt: string;
+}
 
 class ApiError extends Error {
   status: number;
@@ -55,6 +66,13 @@ export const api = {
 
   deleteService: (id: string) =>
     request<{ message: string }>(`/api/services/${id}`, { method: "DELETE" }),
+
+  // Customers
+  createCustomer: (data: CustomerInput) =>
+    request<Customer>("/api/customers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   // Sales
   getSales: (params?: { startDate?: string; endDate?: string; serviceId?: string }) => {

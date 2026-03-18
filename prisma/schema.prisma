@@ -38,9 +38,10 @@ model Service {
 model Sale {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   serviceId    String   @db.ObjectId
-  customerName String
+  customerName String?
   customerGender String @default("male")
   price        Float
+  quantity     Int      @default(1)
   saleDate     DateTime @default(now())
   notes        String   @default("")
   createdAt    DateTime @default(now())
@@ -69,5 +70,19 @@ model Notification {
 
   @@index([userId])
   @@index([read])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  action     String
+  entityType String
+  entityId   String   @default("")
+  details    String   @default("")
+  userId     String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+
+  @@index([entityType])
+  @@index([entityId])
   @@index([createdAt])
 }
