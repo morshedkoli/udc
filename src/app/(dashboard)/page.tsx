@@ -16,6 +16,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { fetcher } from "@/lib/fetcher";
 import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
+import { QuickSaleForm } from "@/components/features/QuickSaleForm";
 import Link from "next/link";
 import {
   AreaChart,
@@ -145,45 +146,51 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Stat Cards */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-        {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-          : stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <motion.div
-                  key={stat.label}
-                  className="dashboard-card stat-card"
-                  custom={i}
-                  variants={fadeUp}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  <div className="stat-card-header">
-                    <span className="stat-card-label">{stat.label}</span>
-                    <div 
-                      className="stat-card-icon"
-                      style={{ background: `${stat.color}1A`, color: stat.color }}
-                    >
-                      <Icon style={{ color: stat.color }} />
+      {/* Stat Cards + Quick Sale Form */}
+      <div className="dashboard-top-section">
+        {/* Stats */}
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', flex: '1' }}>
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+            : stats.map((stat, i) => {
+                const Icon = stat.icon;
+                return (
+                  <motion.div
+                    key={stat.label}
+                    className="dashboard-card stat-card"
+                    custom={i}
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <div className="stat-card-header">
+                      <span className="stat-card-label">{stat.label}</span>
+                      <div
+                        className="stat-card-icon"
+                        style={{ background: `${stat.color}1A`, color: stat.color }}
+                      >
+                        <Icon style={{ color: stat.color }} />
+                      </div>
                     </div>
-                  </div>
-                  <div className="stat-card-value">
-                    <div className="amount-text stat-card-amount">
-                      {stat.format === "currency" ? (
-                        <>
-                          <span className="stat-card-amount-currency">৳</span>
+                    <div className="stat-card-value">
+                      <div className="amount-text stat-card-amount">
+                        {stat.format === "currency" ? (
+                          <>
+                            <span className="stat-card-amount-currency">৳</span>
+                            <AnimatedNumber value={stat.value} />
+                          </>
+                        ) : (
                           <AnimatedNumber value={stat.value} />
-                        </>
-                      ) : (
-                        <AnimatedNumber value={stat.value} />
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+        </div>
+
+        {/* Quick Sale Form - Always visible */}
+        <QuickSaleForm />
       </div>
 
       {error && (
@@ -278,7 +285,7 @@ export default function DashboardPage() {
                   href={action.href}
                   className="quick-action-item"
                 >
-                  <div 
+                  <div
                     className="quick-action-icon"
                     style={{ background: `linear-gradient(145deg, ${action.color}, #7c3aed)` }}
                   >

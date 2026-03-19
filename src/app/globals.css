@@ -861,6 +861,30 @@ body::after {
   }
 }
 
+/* Dashboard Top Section - Stats + Quick Sale */
+.dashboard-top-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-top-section {
+    grid-template-columns: 1fr 380px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-top-section {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+.dashboard-top-section .stats-grid {
+  margin-bottom: 0;
+}
+
 /* ═══════════════════════════════════════════════════
    COMMON UI COMPONENTS
    ═══════════════════════════════════════════════════ */
@@ -4565,4 +4589,289 @@ body::after {
 .mobile-nav-drawer-logout-icon {
   width: 18px;
   height: 18px;
+}
+
+/* ═══════════════════════════════════════════════════
+   QUICK SALE FORM (Homepage)
+   ═══════════════════════════════════════════════════ */
+.quick-sale-card-inline {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.quick-sale-decor {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(99, 102, 241, 0.05) 100%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.quick-sale-header-inline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.quick-sale-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.quick-sale-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.quick-sale-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.quick-sale-form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.quick-sale-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-sale-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.quick-sale-select,
+.quick-sale-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  outline: none;
+  transition: all 150ms ease;
+}
+
+.quick-sale-select:focus,
+.quick-sale-input:focus {
+  border-color: var(--brand-primary);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+.quick-sale-select::placeholder,
+.quick-sale-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.quick-sale-gender {
+  display: flex;
+  gap: 8px;
+}
+
+.quick-sale-gender-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.quick-sale-gender-btn:hover {
+  border-color: var(--border-default);
+}
+
+.quick-sale-gender-btn.active {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.quick-sale-row {
+  display: flex;
+  gap: 12px;
+}
+
+.quick-sale-field-qty {
+  flex-shrink: 0;
+  width: 120px;
+}
+
+.quick-sale-field-price {
+  flex: 1;
+}
+
+.quick-sale-qty {
+  display: flex;
+  align-items: center;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.quick-sale-qty-btn {
+  width: 36px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.quick-sale-qty-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.quick-sale-qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quick-sale-qty-input {
+  flex: 1;
+  width: 100%;
+  padding: 8px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.quick-sale-qty-input::-webkit-outer-spin-button,
+.quick-sale-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quick-sale-price-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 150ms ease;
+}
+
+.quick-sale-price-wrap:focus-within {
+  border-color: var(--brand-primary);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+.quick-sale-currency {
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: rgba(99, 102, 241, 0.05);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.quick-sale-price-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.quick-sale-price-input::-webkit-outer-spin-button,
+.quick-sale-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quick-sale-error {
+  font-size: 12px;
+  color: var(--color-error);
+  margin-top: 4px;
+}
+
+.quick-sale-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 200ms ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.quick-sale-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  filter: brightness(1.05);
+}
+
+.quick-sale-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.quick-sale-submit.success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+/* Dark mode adjustments */
+.dark .quick-sale-decor {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(99, 102, 241, 0.1) 100%);
+}
+
+.dark .quick-sale-gender-btn.active {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
 }
